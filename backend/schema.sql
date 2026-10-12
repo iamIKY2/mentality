@@ -11,7 +11,9 @@ CREATE TYPE notification_type AS ENUM ('reminder_checkin', 'reminder_journal', '
 CREATE TABLE users (
     id              UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     email           VARCHAR(255) UNIQUE NOT NULL,
-    password_hash   TEXT NOT NULL,
+    password_hash   TEXT,
+    auth_provider   VARCHAR(50) DEFAULT 'local',
+    google_id       VARCHAR(255) UNIQUE,
     role            user_role NOT NULL DEFAULT 'student',
     full_name       VARCHAR(255) NOT NULL,
     student_id      VARCHAR(20) UNIQUE,
@@ -22,7 +24,9 @@ CREATE TABLE users (
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,
     created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    last_login_at   TIMESTAMPTZ
+    last_login_at   TIMESTAMPTZ,
+    otp_code        VARCHAR(6),
+    otp_expires_at  TIMESTAMPTZ
 );
 CREATE INDEX idx_users_email      ON users (email);
 CREATE INDEX idx_users_role       ON users (role);

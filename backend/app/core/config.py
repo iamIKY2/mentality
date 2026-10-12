@@ -8,7 +8,7 @@ class Settings(BaseSettings):
     DEBUG: bool = True
 
     # Database
-    DATABASE_URL: str = "postgresql+asyncpg://postgres:admin1234@localhost:5432/enigma_db"
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:258079@localhost:5432/enigma_db"
 
     # JWT
     SECRET_KEY: str = "CHANGE_THIS_TO_A_RANDOM_SECRET_KEY_IN_PRODUCTION"
@@ -19,8 +19,22 @@ class Settings(BaseSettings):
     # Google Gemini
     GEMINI_API_KEY: str = ""
 
+    # Google OAuth
+    GOOGLE_CLIENT_ID: str = "1028134720370-g39rh2ojgtdkl3646cc0uacjaq9k31mr.apps.googleusercontent.com"
+    GOOGLE_ANDROID_CLIENT_ID: str = "1028134720370-dpofimf31oks1f48ivk9bf6qfpd0dl2g.apps.googleusercontent.com"
+
     # Firebase (path to service account JSON)
     FIREBASE_CREDENTIALS_PATH: str = "firebase_credentials.json"
+
+    # ── SMTP Email (Gmail App Password) ──────────────────────────────────────
+    # Hướng dẫn lấy App Password Gmail:
+    # 1. myaccount.google.com → Bảo mật → Xác minh 2 bước (phải bật)
+    # 2. Bảo mật → App passwords → Tạo mới → Đặt tên "Enigma" → Copy 16 ký tự
+    SMTP_HOST: str     = "smtp.gmail.com"
+    SMTP_PORT: int     = 587
+    SMTP_USER: str     = ""          # Điền Gmail của bạn vào .env: SMTP_USER=abc@gmail.com
+    SMTP_PASSWORD: str = ""          # Điền App Password 16 ký tự: SMTP_PASSWORD=xxxx xxxx xxxx xxxx
+    SMTP_FROM_NAME: str = "Enigma – Hỗ trợ tâm lý"
 
     # CORS - allow Flutter app
     CORS_ORIGINS: List[str] = [
@@ -35,3 +49,4 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
