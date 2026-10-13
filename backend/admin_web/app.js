@@ -12,9 +12,26 @@
 (function () {
   'use strict';
 
+  // URL Máy chủ Render Cloud Production của ứng dụng Enigma
+  const RENDER_CLOUD_URL = 'https://mentality-38jh.onrender.com';
+
+  function getInitialApiUrl() {
+    const saved = localStorage.getItem('enigma_api_url');
+    // Nếu chưa lưu hoặc đang lưu localhost thì chuyển hẳn sang Render theo yêu cầu
+    if (!saved || saved.includes('localhost') || saved.includes('127.0.0.1')) {
+      localStorage.setItem('enigma_api_url', RENDER_CLOUD_URL);
+      return RENDER_CLOUD_URL;
+    }
+    // Nếu đang chạy trực tiếp trên domain Render thì dùng chính domain đó
+    if (window.location.origin && window.location.origin.includes('onrender.com')) {
+      return window.location.origin;
+    }
+    return saved;
+  }
+
   // ─── Application State ────────────────────────────────────────────────────────
   const STATE = {
-    apiBaseUrl: localStorage.getItem('enigma_api_url') || (window.location.port === '5500' ? 'http://localhost:8000' : window.location.origin),
+    apiBaseUrl: getInitialApiUrl(),
     adminToken: localStorage.getItem('enigma_admin_token') || 'enigma_admin_master_secret',
     isDemoMode: false,
     activeTab: 'dashboard',
@@ -597,7 +614,8 @@
       // Backend đang chạy tốt!
       STATE.isDemoMode = false;
       DOM.statusIndicator.className = 'status-indicator live';
-      DOM.statusLabel.textContent = `Live API (${new URL(STATE.apiBaseUrl).port || '8000'})`;
+      const isRender = STATE.apiBaseUrl.includes('onrender.com');
+      DOM.statusLabel.textContent = isRender ? 'Render Cloud (Live)' : `Live API (${new URL(STATE.apiBaseUrl).host})`;
       DOM.toggleDataModeBtn.textContent = 'Đổi sang Demo';
       STATE.stats = liveStats;
 

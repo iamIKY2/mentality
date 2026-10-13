@@ -147,7 +147,7 @@
           <!-- Connection Status Pill -->
           <div class="connection-status-pill" id="connection-pill" title="Nhấn để đổi chế độ">
             <span class="status-indicator live" id="status-indicator"></span>
-            <span class="status-label" id="status-label">Live API (8000)</span>
+            <span class="status-label" id="status-label">Render Cloud</span>
             <button class="status-switch-btn" id="toggle-data-mode-btn" title="Chuyển chế độ Live / Demo">Đổi sang Demo</button>
           </div>
 
@@ -579,12 +579,12 @@
             </div>
             <div class="card-body">
               <div class="form-group">
-                <label class="form-label">Backend API URL</label>
+                <label class="form-label">Backend API URL (Render Cloud)</label>
                 <div class="input-with-button">
-                  <input type="text" id="setting-api-url" class="form-input" value="http://localhost:8000">
+                  <input type="text" id="setting-api-url" class="form-input" value="https://mentality-38jh.onrender.com">
                   <button class="btn btn-secondary" id="btn-test-connection">Kiểm Tra</button>
                 </div>
-                <small class="form-hint">Mặc định FastAPI chạy tại cổng 8000 (uvicorn main:app --reload)</small>
+                <small class="form-hint">Máy chủ Render Cloud Production: https://mentality-38jh.onrender.com</small>
               </div>
 
               <div class="form-group">
