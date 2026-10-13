@@ -79,10 +79,35 @@ app.include_router(handbook.router,      prefix="/handbook",      tags=["Handboo
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
 app.include_router(admin.router,         prefix="/admin",         tags=["Admin"])
 
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import RedirectResponse
+
+# Phục vụ giao diện Quản Trị Viên (Admin Web Portal)
+# Ưu tiên tìm trong backend/admin_web (khi deploy Render), sau đó là ../admin_web
+admin_web_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "admin_web"))
+if not os.path.isdir(admin_web_dir):
+    admin_web_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "admin_web"))
+
+if os.path.isdir(admin_web_dir):
+    app.mount("/admin-portal", StaticFiles(directory=admin_web_dir, html=True), name="admin_portal")
+
+
+@app.get("/health", tags=["Health"])
+async def health_check():
+    return {"status": "ok", "message": "Enigma API is running"}
+
 
 @app.get("/", tags=["Health"])
 async def root():
-    return {"status": "ok", "message": "Enigma API is running"}
+    # Khi truy cập URL gốc (Render hoặc localhost), tự động chuyển hướng ngay vào Admin Portal
+    if os.path.isdir(admin_web_dir):
+        return RedirectResponse(url="/admin-portal/")
+    return {
+        "status": "ok",
+        "message": "Enigma API is running",
+        "admin_portal_url": "/admin-portal/"
+    }
 
 
 if __name__ == "__main__":
