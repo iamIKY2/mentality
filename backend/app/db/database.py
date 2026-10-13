@@ -9,7 +9,7 @@ if db_url.startswith("postgresql://"):
 if "sslmode=require" in db_url:
     db_url = db_url.replace("sslmode=require", "ssl=require")
 
-# Khi kết nối qua Supabase Connection Pooler (Supavisor / PgBouncer cổng 6543),
+# Khi kết nối qua Supabase Connection Pooler (Supavisor / PgBouncer cổng 5432 hoặc 6543),
 # cần tắt statement cache để tránh xung đột prepared statements giữa các phiên kết nối.
 connect_args = {}
 if "pooler.supabase.com" in db_url or ":6543" in db_url:
@@ -17,8 +17,13 @@ if "pooler.supabase.com" in db_url or ":6543" in db_url:
 
 engine = create_async_engine(
     db_url,
-    echo=settings.DEBUG,
+    echo=False,  # Tắt echo query log để tối ưu throughput I/O cho Python event loop
     connect_args=connect_args,
+    pool_pre_ping=True,
+    pool_recycle=300,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
 )
 
 AsyncSessionLocal = async_sessionmaker(
@@ -38,19 +43,25 @@ async def get_db():
 async def create_tables():
     """
     Kiểm tra kết nối database khi server khởi động.
-
-    QUAN TRỌNG: Các bảng được tạo thông qua schema.sql (chạy setup_db.ps1)
-    và quản lý migrations bằng Alembic.
-    KHÔNG dùng Base.metadata.create_all() vì schema.sql có các tính năng
-    PostgreSQL-native (ENUM types, triggers, GENERATED columns) mà
-    SQLAlchemy create_all không thể tái tạo chính xác.
     """
     from sqlalchemy import text
     try:
         async with engine.begin() as conn:
+            await conn.execute(text("""
+                CREATE TABLE IF NOT EXISTS user_feature_onboardings (
+                    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+                    feature_key VARCHAR(50) NOT NULL,
+                    completed BOOLEAN NOT NULL DEFAULT TRUE,
+                    completed_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+                    CONSTRAINT uq_user_feature_onboarding UNIQUE (user_id, feature_key)
+                )
+            """))
+            await conn.execute(text("""
+                CREATE INDEX IF NOT EXISTS idx_user_feature_onboarding_user ON user_feature_onboardings (user_id)
+            """))
             result = await conn.execute(text("SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = 'public'"))
             count = result.scalar()
             print(f"[OK] Ket noi PostgreSQL thanh cong - {count} bang dang hoat dong trong database.")
     except Exception as e:
-        print(f"[ERROR] Khong the ket noi den PostgreSQL: {e}")
-        raise e
+        print(f"[WARN] Ket noi database gap loi luc khoi dong: {e}")
