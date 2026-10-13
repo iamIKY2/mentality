@@ -1,0 +1,34 @@
+# ==============================================================================
+# RENDER.COM DEPLOYMENT BLUEPRINT — ENIGMA BACKEND & ADMIN PORTAL
+# ==============================================================================
+# Tự động triển khai lên Render.com với Supabase PostgreSQL
+services:
+  - type: web
+    name: enigma-backend-admin
+    runtime: python
+    region: singapore # hoặc oregon / frankfurt
+    plan: free
+    branch: main
+    buildCommand: "pip install --upgrade pip && pip install -r backend/requirements.txt"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.10.11
+      - key: APP_NAME
+        value: Enigma API
+      - key: DEBUG
+        value: "False"
+      - key: DATABASE_URL
+        value: postgresql+asyncpg://postgres.uffjypombbimytrcpcde:NmrEEMtWUfcvsPuJ@aws-0-ap-northeast-1.pooler.supabase.com:5432/postgres
+      - key: SECRET_KEY
+        value: f20808c2-de8d-48d0-b519-0177993ca972
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: "30"
+      - key: GEMINI_API_KEY
+        sync: false # Điền trên dashboard Render hoặc lấy từ .env
