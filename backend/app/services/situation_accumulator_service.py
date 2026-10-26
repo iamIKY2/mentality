@@ -37,7 +37,15 @@ class SituationAccumulatorService:
 
         if settings.GEMINI_API_KEY:
             try:
-                model = genai.GenerativeModel("gemini-3.8-flash")
+                model = None
+                for m_name in ["gemini-3.5-flash", "gemini-3.8-flash"]:
+                    try:
+                        model = genai.GenerativeModel(m_name)
+                        break
+                    except Exception:
+                        continue
+                if model is None:
+                    model = genai.GenerativeModel("gemini-3.8-flash")
                 prompt = f"""
 Bạn là chuyên gia quản trị tri thức thực tập sinh. Hãy phân tích tình huống và giải pháp sau đây để tạo thành một bài cẩm nang kinh nghiệm ngắn gọn, súc tích:
 

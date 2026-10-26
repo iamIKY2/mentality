@@ -60,3 +60,27 @@ async def perform_checkin(
         "longest_streak": streak.longest_streak,
         "checkin_id": str(res["checkin"].id)
     }
+
+
+class PHQ4AssessmentRequest(BaseModel):
+    q1_interest: int = 0
+    q2_depressed: int = 0
+    q3_anxious: int = 0
+    q4_worry: int = 0
+    note: Optional[str] = None
+
+
+@router.post("/phq4", summary="Sàng lọc sức khỏe tâm thần chuẩn quốc tế PHQ-4")
+async def assess_phq4(
+    payload: PHQ4AssessmentRequest,
+    authorization: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
+    from app.services.ai_agent_service import AIAgentService
+    result = AIAgentService.evaluate_phq4(
+        q1_interest=payload.q1_interest,
+        q2_depressed=payload.q2_depressed,
+        q3_anxious=payload.q3_anxious,
+        q4_worry=payload.q4_worry
+    )
+    return result

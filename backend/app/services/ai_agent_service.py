@@ -21,8 +21,51 @@ MODERATE_RISK_KEYWORDS = [
     "căng thẳng", "mệt mỏi", "đau vai gáy", "đau lưng", "mất ngủ", "áp lực ca đêm"
 ]
 
-
 class AIAgentService:
+    @staticmethod
+    def evaluate_phq4(
+        q1_interest: int,
+        q2_depressed: int,
+        q3_anxious: int,
+        q4_worry: int
+    ) -> Dict[str, Any]:
+        """
+        Đánh giá sàng lọc sức khỏe tâm thần chuẩn quốc tế PHQ-4 (Patient Health Questionnaire-4).
+        Tham chiếu: Kroenke et al. (2009) & Đánh giá y khoa PMC8038412 (NIH/NCBI).
+        """
+        depression_score = max(0, min(3, q1_interest)) + max(0, min(3, q2_depressed))
+        anxiety_score = max(0, min(3, q3_anxious)) + max(0, min(3, q4_worry))
+        total_score = depression_score + anxiety_score
+
+        if total_score >= 9:
+            level = "RED"
+            severity = "Nguy cơ cao (Severe)"
+            advice = "Bạn đang trải qua trạng thái căng thẳng và kiệt sức nghiêm trọng. Enigma khuyến nghị bạn nên nghỉ ngơi và liên hệ ngay chuyên gia tâm lý hoặc hotline hỗ trợ 111."
+        elif total_score >= 6:
+            level = "ORANGE"
+            severity = "Nguy cơ vừa (Moderate)"
+            advice = "Dấu hiệu lo âu và căng thẳng của bạn đang ở mức đáng chú ý. Hãy chủ động giảm bớt việc làm thêm giờ (OT) và trao đổi với cố vấn."
+        elif total_score >= 3:
+            level = "YELLOW"
+            severity = "Nguy cơ nhẹ (Mild)"
+            advice = "Bạn có biểu hiện mệt mỏi hoặc lo âu nhẹ do áp lực ca kíp. Hãy thử bài tập hít thở Box Breathing 4-4-4-4 và chăm sóc giấc ngủ nhé."
+        else:
+            level = "GREEN"
+            severity = "Tâm lý ổn định (Minimal / Normal)"
+            advice = "Tinh thần của bạn đang rất ổn định và vững vàng. Hãy tiếp tục duy trì lối sống lành mạnh nhé!"
+
+        return {
+            "total_score": total_score,
+            "depression_score": depression_score,
+            "anxiety_score": anxiety_score,
+            "has_depression_risk": depression_score >= 3,
+            "has_anxiety_risk": anxiety_score >= 3,
+            "level": level,
+            "severity": severity,
+            "advice": advice,
+            "citation": "Dựa trên thang đo chuẩn y khoa PHQ-4 (Đại học Columbia & Viện Y tế Quốc gia Hoa Kỳ PMC8038412)"
+        }
+
     @staticmethod
     def evaluate_psychological_risk(
         stress_level: int,

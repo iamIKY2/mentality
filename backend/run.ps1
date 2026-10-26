@@ -13,9 +13,11 @@ try {
     }
 } catch {}
 
-# Kich hoat virtualenv
-& "$PSScriptRoot\venv\Scripts\Activate.ps1"
+# Kich hoat virtualenv neu co
+if (Test-Path "$PSScriptRoot\venv\Scripts\Activate.ps1") {
+    try { & "$PSScriptRoot\venv\Scripts\Activate.ps1" } catch {}
+}
 
 # Chay uvicorn tren 0.0.0.0 de Flutter Mobile / Android Emulator co the ket noi
-uvicorn main:app --reload --host 0.0.0.0 --port 8000
+python -m uvicorn main:app --reload --host 0.0.0.0 --port 8000
 

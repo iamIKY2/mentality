@@ -86,12 +86,16 @@ Nhiệm vụ: Trả lời câu hỏi của sinh viên dựa trên thông tin C�
         # Step 4: Call Gemini API or fallback
         ai_reply = ""
         if settings.GEMINI_API_KEY:
-            try:
-                model = genai.GenerativeModel("gemini-3.8-flash")
-                chat = model.start_chat()
-                response = chat.send_message(f"{system_prompt}\n\nCÂU HỎI SINH VIÊN: {query}")
-                ai_reply = response.text
-            except Exception as e:
+            for m_name in ["gemini-3.5-flash", "gemini-3.8-flash"]:
+                try:
+                    model = genai.GenerativeModel(m_name)
+                    chat = model.start_chat()
+                    response = chat.send_message(f"{system_prompt}\n\nCÂU HỎI SINH VIÊN: {query}")
+                    ai_reply = response.text
+                    break
+                except Exception:
+                    continue
+            if not ai_reply:
                 ai_reply = RAGService._fallback_response(query, relevant_chunks, risk_result, user_name)
         else:
             ai_reply = RAGService._fallback_response(query, relevant_chunks, risk_result, user_name)
