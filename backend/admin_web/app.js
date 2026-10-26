@@ -16,17 +16,15 @@
   const RENDER_CLOUD_URL = 'https://mentality-38jh.onrender.com';
 
   function getInitialApiUrl() {
-    const saved = localStorage.getItem('enigma_api_url');
-    // Nếu chưa lưu hoặc đang lưu localhost thì chuyển hẳn sang Render theo yêu cầu
-    if (!saved || saved.includes('localhost') || saved.includes('127.0.0.1')) {
-      localStorage.setItem('enigma_api_url', RENDER_CLOUD_URL);
-      return RENDER_CLOUD_URL;
-    }
-    // Nếu đang chạy trực tiếp trên domain Render thì dùng chính domain đó
-    if (window.location.origin && window.location.origin.includes('onrender.com')) {
+    // Tự động nhận diện thông minh 100%:
+    // - Khi mở trên http://localhost:8000/admin-web/ -> Tự gọi http://localhost:8000
+    // - Khi mở trên https://mentality-38jh.onrender.com/admin-web/ -> Tự gọi https://mentality-38jh.onrender.com
+    if (window.location.origin && window.location.origin !== 'null' && !window.location.origin.startsWith('file:')) {
       return window.location.origin;
     }
-    return saved;
+    const saved = localStorage.getItem('enigma_api_url');
+    if (saved) return saved;
+    return RENDER_CLOUD_URL;
   }
 
   // ─── Application State ────────────────────────────────────────────────────────

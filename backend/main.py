@@ -92,6 +92,15 @@ async def root():
     return {"status": "ok", "message": "Enigma API is running"}
 
 
+# Mount Admin Web Portal nếu thư mục tồn tại
+import os
+from fastapi.staticfiles import StaticFiles
+
+admin_web_dir = os.path.join(os.path.dirname(__file__), "admin_web")
+if os.path.exists(admin_web_dir):
+    app.mount("/admin-web", StaticFiles(directory=admin_web_dir, html=True), name="admin_web")
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
