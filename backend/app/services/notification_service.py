@@ -109,7 +109,7 @@ class NotificationService:
             log.is_sent = True
             log.sent_at = datetime.now(timezone.utc)
             log.fcm_message_id = "simulated_fcm_" + str(datetime.now(timezone.utc).timestamp())
-            print(f"\n🔔 [PUSH NOTIFICATION SIMULATED]\n  To User : {user.email if user else user_id}\n  Title   : {title}\n  Body    : {body}\n  Type    : {notif_type.value}\n")
+            logger.info(f"[PUSH SIMULATED] To: {user.email if user else user_id} | Title: {title} | Body: {body}")
 
         db.add(log)
         await db.commit()
@@ -147,8 +147,11 @@ class NotificationService:
         limit: int = 50,
         offset: int = 0,
     ):
-        """Lấy danh sách thông báo của user + đếm số chưa đọc."""
-        conditions = [NotificationLog.user_id == user_id]
+        """Lấy danh sách thông báo của user + đếm số chưa đọc (bao gồm thông báo phát chung)."""
+        from sqlalchemy import or_
+
+        user_filter = or_(NotificationLog.user_id == user_id, NotificationLog.user_id.is_(None))
+        conditions = [user_filter]
         if unread_only:
             conditions.append(NotificationLog.is_read == False)
 
@@ -163,12 +166,12 @@ class NotificationService:
         items = result.scalars().all()
 
         # Count total
-        count_q = select(func.count(NotificationLog.id)).where(NotificationLog.user_id == user_id)
+        count_q = select(func.count(NotificationLog.id)).where(user_filter)
         total = (await db.execute(count_q)).scalar() or 0
 
         # Count unread
         unread_q = select(func.count(NotificationLog.id)).where(
-            NotificationLog.user_id == user_id,
+            user_filter,
             NotificationLog.is_read == False,
         )
         unread_count = (await db.execute(unread_q)).scalar() or 0
