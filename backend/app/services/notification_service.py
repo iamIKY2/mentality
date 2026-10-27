@@ -95,6 +95,15 @@ class NotificationService:
                 message = messaging.Message(
                     notification=messaging.Notification(title=title, body=body),
                     data={str(k): str(v) for k, v in (data_payload or {}).items()},
+                    android=messaging.AndroidConfig(
+                        priority="high",
+                        notification=messaging.AndroidNotification(
+                            channel_id="enigma_high_importance_channel",
+                            priority="high",
+                            default_sound=True,
+                            default_vibrate_timings=True,
+                        ),
+                    ),
                     token=fcm_token,
                 )
                 fcm_id = messaging.send(message)
