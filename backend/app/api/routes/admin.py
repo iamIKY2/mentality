@@ -4,6 +4,7 @@ from sqlalchemy import select, func, and_
 from typing import Optional, List, Dict, Any
 from datetime import datetime, timezone
 from uuid import UUID
+from pydantic import BaseModel
 
 from app.db.database import get_db
 from app.db.models.user import User, UserRole
@@ -11,7 +12,7 @@ from app.db.models.intern_profile import InternProfile
 from app.db.models.checkin import DailyCheckin, UserStreak
 from app.db.models.handbook_article import HandbookArticle, ArticleStatus
 from app.db.models.task import Task, UserTaskProgress
-from app.db.models.notification_log import NotificationLog
+from app.db.models.notification_log import NotificationLog, NotificationType
 from app.db.models.journal import Journal
 
 router = APIRouter()
@@ -197,5 +198,31 @@ async def get_notification_history(db: AsyncSession = Depends(get_db)):
         }
         for n in notifs
     ]
+
+
+class BroadcastRequest(BaseModel):
+    title: str
+    body: str
+    type: Optional[str] = "system"
+    target_role: Optional[str] = "all"
+
+
+@router.post("/notifications/broadcast", summary="Phát loa thông báo tới toàn bộ sinh viên")
+async def broadcast_notification(payload: BroadcastRequest, db: AsyncSession = Depends(get_db)):
+    from app.services.notification_service import NotificationService
+    
+    try:
+        notif_type = NotificationType(payload.type)
+    except Exception:
+        notif_type = NotificationType.system
+
+    count = await NotificationService.broadcast_notification(
+        db=db,
+        title=payload.title,
+        body=payload.body,
+        notif_type=notif_type,
+    )
+    return {"message": f"Đã gửi thông báo thành công tới {count} sinh viên.", "sent_count": count}
+
 
 

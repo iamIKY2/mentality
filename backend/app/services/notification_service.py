@@ -1,4 +1,4 @@
-﻿import os
+import os
 import logging
 from typing import Optional, List
 from datetime import datetime, timezone
@@ -23,20 +23,43 @@ def _init_firebase():
     if _firebase_initialized:
         return True
 
-    cred_path = settings.FIREBASE_CREDENTIALS_PATH
-    if cred_path and os.path.exists(cred_path):
+    import json
+
+    # 1. Check if raw JSON string is provided in environment variable (Render / Cloud friendly)
+    cred_json_str = os.getenv("FIREBASE_CREDENTIALS_JSON")
+    if cred_json_str:
         try:
-            cred = credentials.Certificate(cred_path)
+            cred_dict = json.loads(cred_json_str)
+            cred = credentials.Certificate(cred_dict)
             firebase_admin.initialize_app(cred)
             _firebase_initialized = True
-            logger.info(f"[FCM] Firebase Admin SDK initialized with: {cred_path}")
+            logger.info("[FCM] Firebase Admin SDK initialized successfully via FIREBASE_CREDENTIALS_JSON env var.")
             return True
         except Exception as e:
-            logger.warning(f"[FCM] Failed to initialize Firebase Admin with credentials: {e}")
-            return False
-    else:
-        logger.info("[FCM] Firebase credentials not found – running in local/simulated push mode.")
-        return False
+            logger.warning(f"[FCM] Failed to initialize Firebase Admin with FIREBASE_CREDENTIALS_JSON: {e}")
+
+    # 2. Check candidate file paths (Local / Render Secret Files)
+    candidate_paths = [
+        settings.FIREBASE_CREDENTIALS_PATH,
+        "firebase_credentials.json",
+        "backend/firebase_credentials.json",
+        "/etc/secrets/firebase_credentials.json",  # Render secret file default mount
+        os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "firebase_credentials.json"),
+    ]
+
+    for path in candidate_paths:
+        if path and os.path.exists(path):
+            try:
+                cred = credentials.Certificate(path)
+                firebase_admin.initialize_app(cred)
+                _firebase_initialized = True
+                logger.info(f"[FCM] Firebase Admin SDK initialized with file: {path}")
+                return True
+            except Exception as e:
+                logger.warning(f"[FCM] Failed to initialize Firebase Admin with file {path}: {e}")
+
+    logger.info("[FCM] Firebase credentials not found – running in local/simulated push mode.")
+    return False
 
 # Try initializing on module load
 _init_firebase()
