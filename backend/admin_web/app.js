@@ -942,8 +942,13 @@
             <p class="text-muted">${s.university || 'N/A'}</p>
           </td>
           <td>
-            <span>${s.company_name || 'LG Display'}</span>
-            <p class="text-muted">${s.department || 'Ban sản xuất'}</p>
+            <strong>${s.company_name || 'LG Display'}</strong>
+            <p class="text-muted" style="margin-bottom:3px">${s.department || 'Ban sản xuất'}</p>
+            ${s.work_shift === 'night_12h' 
+              ? '<span class="shift-pill night">🌙 Ca đêm (20h-8h)</span>' 
+              : (s.work_shift === 'office_8h' 
+                ? '<span class="shift-pill office">💼 Hành chính</span>' 
+                : '<span class="shift-pill day">☀️ Ca ngày (8h-20h)</span>')}
           </td>
           <td>${phaseNames[s.current_phase] || s.current_phase}</td>
           <td>
@@ -1153,7 +1158,8 @@
     document.getElementById('um-avatar').textContent = user.full_name ? user.full_name.charAt(0) : 'U';
     document.getElementById('um-name-card').textContent = user.full_name;
     document.getElementById('um-email').textContent = user.email;
-    document.getElementById('um-company').textContent = `${user.company_name || 'LG Display'} — ${user.department || 'Ban sản xuất'}`;
+    const shiftText = user.work_shift === 'night_12h' ? '🌙 Ca đêm (20h-8h)' : (user.work_shift === 'office_8h' ? '💼 Hành chính' : '☀️ Ca ngày (8h-20h)');
+    document.getElementById('um-company').innerHTML = `${user.company_name || 'LG Display'} — ${user.department || 'Ban sản xuất'} &bull; <span class="text-white">${shiftText}</span>`;
 
     // 5 Pillars scores
     const scores = user.initial_scores || { sleep: 70, physical: 65, mental: 60, social: 75, career: 80 };

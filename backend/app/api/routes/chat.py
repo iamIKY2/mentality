@@ -69,6 +69,18 @@ async def get_sessions(
     ]
 
 
+@router.delete("/sessions/{session_id}", summary="Xóa một phiên trò chuyện")
+async def delete_session(
+    session_id: UUID,
+    user=Depends(get_authed_user),
+    db: AsyncSession = Depends(get_db)
+):
+    success = await ChatService.delete_session(db, user.id, session_id)
+    if not success:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Không tìm thấy phiên trò chuyện.")
+    return {"status": "deleted", "session_id": str(session_id)}
+
+
 @router.get("/sessions/{session_id}/messages", summary="Lấy lịch sử tin nhắn trong phiên")
 async def get_messages(
     session_id: UUID,

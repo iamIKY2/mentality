@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.routes import auth, users, checkins, journals, tasks, chat, handbook, admin, life_logs, notifications
+from app.api.routes import auth, users, checkins, journals, tasks, chat, handbook, admin, life_logs, notifications, workplace
 from app.db.database import create_tables
 from app.core.config import settings
 
@@ -84,6 +84,7 @@ app.include_router(tasks.router,     prefix="/tasks",     tags=["Tasks"])
 app.include_router(chat.router,          prefix="/chat",          tags=["AI Chat"])
 app.include_router(handbook.router,      prefix="/handbook",      tags=["Handbook"])
 app.include_router(notifications.router, prefix="/notifications", tags=["Notifications"])
+app.include_router(workplace.router,     prefix="/workplace",     tags=["Workplace & Geofence"])
 app.include_router(admin.router,         prefix="/admin",         tags=["Admin"])
 
 
