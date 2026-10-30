@@ -79,6 +79,7 @@ CREATE TABLE journals (
     journal_date      DATE NOT NULL,
     stress_level      SMALLINT NOT NULL CHECK (stress_level BETWEEN 1 AND 5),
     sleep_hours       NUMERIC(3,1) NOT NULL CHECK (sleep_hours BETWEEN 0 AND 24),
+    shift_type        TEXT,
     physical_symptoms TEXT[] DEFAULT '{}',
     note              TEXT,
     ai_sentiment      VARCHAR(20),
@@ -86,6 +87,7 @@ CREATE TABLE journals (
     created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT uq_journal_user_date UNIQUE (user_id, journal_date)
 );
+ALTER TABLE journals ADD COLUMN IF NOT EXISTS shift_type text;
 CREATE INDEX idx_journals_user_date ON journals (user_id, journal_date DESC);
 
 -- 6. TASKS MASTER LIST

@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+
 import 'api_client.dart';
 import '../utils/storage.dart';
 import '../services/sync_service.dart';
@@ -27,7 +28,10 @@ class LifeLogRepository {
     };
 
     try {
-      final response = await ApiClient.instance.post('/life-logs', data: payload);
+      final response = await ApiClient.instance.post(
+        '/life-logs',
+        data: payload,
+      );
       final resData = response.data as Map<String, dynamic>;
 
       // Lưu cache ngày hôm nay
@@ -42,17 +46,23 @@ class LifeLogRepository {
 
       return resData;
     } on DioException catch (e) {
-      final isNetworkError = e.type == DioExceptionType.connectionError ||
+      final isNetworkError =
+          e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.unknown;
 
       if (isNetworkError) {
-        debugPrint('[LifeLogRepository] Mất mạng: Lưu nhật ký vào bộ nhớ máy và đưa vào SyncQueue.');
-        
+        debugPrint(
+          '[LifeLogRepository] Mất mạng: Lưu nhật ký vào bộ nhớ máy và đưa vào SyncQueue.',
+        );
+
         // Tính điểm sức khỏe ước tính offline
-        int score = 100 - (stressLevel - 1) * 12 - ((physicalSymptoms?.length ?? 0) * 5);
+        int score =
+            100 -
+            (stressLevel - 1) * 12 -
+            ((physicalSymptoms?.length ?? 0) * 5);
         if (sleepHours >= 7 && sleepHours <= 9) score += 5;
         score = score.clamp(30, 100);
 
@@ -71,7 +81,9 @@ class LifeLogRepository {
         // Cập nhật lại cached dashboard để Home Screen hiển thị điểm mới
         final cachedDash = StorageUtil.getCachedDashboard();
         if (cachedDash != null) {
-          final today = Map<String, dynamic>.from(cachedDash['today'] as Map? ?? {});
+          final today = Map<String, dynamic>.from(
+            cachedDash['today'] as Map? ?? {},
+          );
           today['wellbeing_score'] = score;
           today['stress_level'] = stressLevel;
           today['sleep_hours'] = sleepHours;
@@ -117,8 +129,10 @@ class LifeLogRepository {
 
   static Future<Map<String, dynamic>> getHistory({int days = 14}) async {
     try {
-      final response =
-          await ApiClient.instance.get('/life-logs/history', queryParameters: {'days': days});
+      final response = await ApiClient.instance.get(
+        '/life-logs/history',
+        queryParameters: {'days': days},
+      );
       return response.data as Map<String, dynamic>;
     } catch (_) {
       // Khi mất mạng, trả về lịch sử nếu có trong cache
@@ -134,8 +148,10 @@ class LifeLogRepository {
 
   static Future<Map<String, dynamic>> getAnalytics({int days = 7}) async {
     try {
-      final response =
-          await ApiClient.instance.get('/life-logs/analytics', queryParameters: {'days': days});
+      final response = await ApiClient.instance.get(
+        '/life-logs/analytics',
+        queryParameters: {'days': days},
+      );
       return response.data as Map<String, dynamic>;
     } catch (_) {
       return {
@@ -158,7 +174,7 @@ class LifeLogRepository {
       if (cached != null) {
         final todayLog = StorageUtil.getCachedTodayLifeLog();
         final todayCheckin = StorageUtil.getCachedTodayCheckin();
-        
+
         final today = Map<String, dynamic>.from(cached['today'] as Map? ?? {});
         if (todayLog != null && todayLog['data'] != null) {
           final logData = todayLog['data'] as Map<String, dynamic>;
@@ -179,15 +195,11 @@ class LifeLogRepository {
           'wellbeing_score': 85,
           'sleep_hours': 7.5,
           'stress_level': 2,
-          'has_checked_in': StorageUtil.getCachedTodayCheckin()?['has_checked_in'] ?? false,
+          'has_checked_in':
+              StorageUtil.getCachedTodayCheckin()?['has_checked_in'] ?? false,
         },
-        'streak': {
-          'current_streak': 3,
-          'longest_streak': 5,
-        },
-        'weekly_analytics': {
-          'overall_risk_level': 'GREEN',
-        },
+        'streak': {'current_streak': 3, 'longest_streak': 5},
+        'weekly_analytics': {'overall_risk_level': 'GREEN'},
       };
     }
   }
@@ -208,12 +220,17 @@ class CheckinRepository {
     };
 
     try {
-      final response = await ApiClient.instance.post('/checkins', data: payload);
+      final response = await ApiClient.instance.post(
+        '/checkins',
+        data: payload,
+      );
       final resData = response.data as Map<String, dynamic>;
 
       await StorageUtil.saveCachedTodayCheckin({
         'has_checked_in': true,
-        'mood': mood,
+        'mood': resData['mood'] ?? mood,
+        'stress_factors': resData['stress_factors'] ?? stressFactors ?? [],
+        'note': resData['note'] ?? note ?? '',
         'gacha_message': resData['gacha_message'],
         'current_streak': resData['current_streak'],
         'longest_streak': resData['longest_streak'],
@@ -222,14 +239,17 @@ class CheckinRepository {
 
       return resData;
     } on DioException catch (e) {
-      final isNetworkError = e.type == DioExceptionType.connectionError ||
+      final isNetworkError =
+          e.type == DioExceptionType.connectionError ||
           e.type == DioExceptionType.connectionTimeout ||
           e.type == DioExceptionType.sendTimeout ||
           e.type == DioExceptionType.receiveTimeout ||
           e.type == DioExceptionType.unknown;
 
       if (isNetworkError) {
-        debugPrint('[CheckinRepository] Mất mạng: Điểm danh lưu local và đưa vào SyncQueue.');
+        debugPrint(
+          '[CheckinRepository] Mất mạng: Điểm danh lưu local và đưa vào SyncQueue.',
+        );
 
         const gachaMessages = [
           '⭐ Hôm nay bạn đã làm rất tốt! Hãy tiếp tục vững bước nhé.',
@@ -237,14 +257,18 @@ class CheckinRepository {
           '✨ Bạn mạnh mẽ hơn bạn nghĩ. Đừng quên chăm sóc bản thân nhé!',
           '🌻 Hãy tự thưởng cho mình một tách trà ấm và nghỉ ngơi đủ giấc hôm nay.',
         ];
-        final randomMsg = gachaMessages[DateTime.now().second % gachaMessages.length];
+        final randomMsg =
+            gachaMessages[DateTime.now().second % gachaMessages.length];
 
         final cachedCheckin = StorageUtil.getCachedTodayCheckin();
-        final currentStreak = ((cachedCheckin?['current_streak'] as num?)?.toInt() ?? 2) + 1;
+        final currentStreak =
+            ((cachedCheckin?['current_streak'] as num?)?.toInt() ?? 2) + 1;
 
         await StorageUtil.saveCachedTodayCheckin({
           'has_checked_in': true,
           'mood': mood,
+          'stress_factors': stressFactors ?? [],
+          'note': note ?? '',
           'gacha_message': randomMsg,
           'current_streak': currentStreak,
           'longest_streak': currentStreak,
@@ -254,10 +278,14 @@ class CheckinRepository {
         // Cập nhật cached dashboard
         final cachedDash = StorageUtil.getCachedDashboard();
         if (cachedDash != null) {
-          final today = Map<String, dynamic>.from(cachedDash['today'] as Map? ?? {});
+          final today = Map<String, dynamic>.from(
+            cachedDash['today'] as Map? ?? {},
+          );
           today['has_checked_in'] = true;
           cachedDash['today'] = today;
-          final streak = Map<String, dynamic>.from(cachedDash['streak'] as Map? ?? {});
+          final streak = Map<String, dynamic>.from(
+            cachedDash['streak'] as Map? ?? {},
+          );
           streak['current_streak'] = currentStreak;
           cachedDash['streak'] = streak;
           await StorageUtil.saveCachedDashboard(cachedDash);
@@ -286,11 +314,17 @@ class CheckinRepository {
     try {
       final response = await ApiClient.instance.get('/checkins/today');
       final data = response.data as Map<String, dynamic>;
-      await StorageUtil.saveCachedTodayCheckin(data);
+      await StorageUtil.saveCachedTodayCheckin({
+        ...data,
+        'date': DateTime.now().toIso8601String(),
+      });
       return data;
     } catch (_) {
       final cached = StorageUtil.getCachedTodayCheckin();
-      if (cached != null) {
+      if (cached != null &&
+          (cached['date'] as String? ?? '').startsWith(
+            DateTime.now().toIso8601String().substring(0, 10),
+          )) {
         return cached;
       }
       return {

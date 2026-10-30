@@ -81,7 +81,7 @@ class AdvancedRAGService:
         user_name: str = "Sinh viên",
         intern_phase: str = "adaptation",
         stress_level: int = 2,
-        sleep_hours: float = 7.0,
+        sleep_hours: Optional[float] = None,
         recent_symptoms: Optional[List[str]] = None,
         top_k: int = 3,
         user_id: Optional[str] = None,
@@ -149,6 +149,12 @@ Nhiệm vụ: Chào hỏi bạn {user_name} một cách ấm áp, thân thiện 
             system_prompt = f"""Bạn là Enigma AI — Trợ lý Thực tập LG Display.
 Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca làm việc an toàn, nhiều năng lượng và nhắc bạn luôn có Enigma bên cạnh khi cần hỗ trợ."""
         else:
+            sleep_info = f"{sleep_hours}h" if sleep_hours is not None else "Chưa có dữ liệu (chưa rõ)"
+            if sleep_hours is None:
+                sleep_instruction = f"5. DỮ LIỆU GIẤC NGỦ: Hiện tại hệ thống CHƯA CÓ dữ liệu giấc ngủ ca gần nhất của bạn {user_name} (chưa rõ). Tuyệt đối KHÔNG tự giả định bạn ấy đã ngủ đủ 7 tiếng. Nếu sinh viên nhắc đến mệt mỏi, uể oải, ca kíp hay sức khỏe, hãy ân cần hỏi thăm xem ca vừa rồi bạn ấy ngủ được khoảng mấy tiếng."
+            else:
+                sleep_instruction = f"5. DỮ LIỆU GIẤC NGỦ: Ca gần nhất bạn {user_name} ngủ {sleep_hours}h. Hãy cân nhắc thông tin này khi tư vấn sức khỏe và phục hồi năng lượng."
+
             system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý, Sức khỏe & Thích nghi Thực tập Doanh nghiệp tại LG Display.
 
 🎯 NGUYÊN TẮC PHẢN HỒI:
@@ -156,9 +162,10 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
 2. Nếu có cẩm nang liên quan bên dưới, hãy trích dẫn rõ [Nguồn X: Tên bài viết] và ứng dụng vào câu trả lời.
 3. Đưa ra 2-3 lời khuyên hành động thực tế, khoa học và dễ làm theo.
 4. Xưng hô thân thiện "mình - bạn" hoặc "Enigma - {user_name}".
+{sleep_instruction}
 
 👤 THÔNG TIN SINH VIÊN:
-- Tên: {user_name} | Chặng: {intern_phase} | Stress: {stress_level}/5 | Ngủ: {sleep_hours}h | Triệu chứng: {', '.join(recent_symptoms) if recent_symptoms else 'Bình thường'}
+- Tên: {user_name} | Chặng: {intern_phase} | Stress: {stress_level}/5 | Ngủ: {sleep_info} | Triệu chứng: {', '.join(recent_symptoms) if recent_symptoms else 'Bình thường'}
 
 📚 CẨM NANG LIÊN QUAN (RAG CONTEXT):
 {context_str}
@@ -245,7 +252,7 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
         user_name: str = "Sinh viên",
         intern_phase: str = "adaptation",
         stress_level: int = 2,
-        sleep_hours: float = 7.0,
+        sleep_hours: Optional[float] = None,
         recent_symptoms: Optional[List[str]] = None,
         top_k: int = 3,
         user_id: Optional[str] = None,
@@ -260,7 +267,8 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
         risk_result = AIAgentService.evaluate_psychological_risk(
             stress_level=stress_level,
             sleep_hours=sleep_hours,
-            note_text=query
+            note_text=query,
+            physical_symptoms=recent_symptoms
         )
 
         rag_sources = []
@@ -307,6 +315,12 @@ Nhiệm vụ: Chào hỏi bạn {user_name} một cách ấm áp, thân thiện 
             system_prompt = f"""Bạn là Enigma AI — Trợ lý Thực tập LG Display.
 Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca làm việc an toàn, nhiều năng lượng và nhắc bạn luôn có Enigma bên cạnh khi cần hỗ trợ."""
         else:
+            sleep_info = f"{sleep_hours}h" if sleep_hours is not None else "Chưa có dữ liệu (chưa rõ)"
+            if sleep_hours is None:
+                sleep_instruction = f"5. DỮ LIỆU GIẤC NGỦ: Hiện tại hệ thống CHƯA CÓ dữ liệu giấc ngủ ca gần nhất của bạn {user_name} (chưa rõ). Tuyệt đối KHÔNG tự giả định bạn ấy đã ngủ đủ 7 tiếng. Nếu sinh viên nhắc đến mệt mỏi, uể oải, ca kíp hay sức khỏe, hãy ân cần hỏi thăm xem ca vừa rồi bạn ấy ngủ được khoảng mấy tiếng."
+            else:
+                sleep_instruction = f"5. DỮ LIỆU GIẤC NGỦ: Ca gần nhất bạn {user_name} ngủ {sleep_hours}h. Hãy cân nhắc thông tin này khi tư vấn sức khỏe và phục hồi năng lượng."
+
             system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý, Sức khỏe & Thích nghi Thực tập Doanh nghiệp tại LG Display.
 
 🎯 NGUYÊN TẮC PHẢN HỒI:
@@ -314,9 +328,10 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
 2. Nếu có cẩm nang liên quan bên dưới, hãy trích dẫn rõ [Nguồn X: Tên bài viết] và ứng dụng vào câu trả lời.
 3. Đưa ra 2-3 lời khuyên hành động thực tế, khoa học và dễ làm theo.
 4. Xưng hô thân thiện "mình - bạn" hoặc "Enigma - {user_name}".
+{sleep_instruction}
 
 👤 THÔNG TIN SINH VIÊN:
-- Tên: {user_name} | Chặng: {intern_phase} | Stress: {stress_level}/5 | Ngủ: {sleep_hours}h | Triệu chứng: {', '.join(recent_symptoms) if recent_symptoms else 'Bình thường'}
+- Tên: {user_name} | Chặng: {intern_phase} | Stress: {stress_level}/5 | Ngủ: {sleep_info} | Triệu chứng: {', '.join(recent_symptoms) if recent_symptoms else 'Bình thường'}
 
 📚 CẨM NANG LIÊN QUAN (RAG CONTEXT):
 {context_str}

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'core/utils/storage.dart';
 import 'core/api/api_client.dart';
 import 'core/services/push_notification_service.dart';
+import 'core/services/reminder_service.dart';
 import 'core/services/sync_service.dart';
 import 'theme/app_theme.dart';
 import 'app.dart';
@@ -33,6 +34,9 @@ void main() async {
 
   // Initialize Firebase & Push Notification Service
   await PushNotificationService.init();
+
+  // Initialize Daily Sleep Reminder Service
+  await ReminderService.init();
 
   // Kết nối callback: khi cả refresh token hết hạn → tự động về LoginScreen
   ApiClient.onUnauthorized = () {

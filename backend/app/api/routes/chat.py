@@ -20,7 +20,7 @@ class CreateSessionRequest(BaseModel):
 class SendMessageRequest(BaseModel):
     content: str = Field(..., min_length=1, description="Nội dung câu hỏi hoặc tâm sự của sinh viên")
     stress_level: Optional[int] = Field(2, ge=1, le=5, description="Mức độ stress hiện tại (1-5)")
-    sleep_hours: Optional[float] = Field(7.0, ge=0, le=24, description="Số giờ ngủ ca gần nhất")
+    sleep_hours: Optional[float] = Field(None, ge=0, le=24, description="Số giờ ngủ ca gần nhất (None nếu chưa ghi nhận)")
     recent_symptoms: Optional[List[str]] = Field(default=[], description="Triệu chứng thể chất mệt mỏi")
 
 
@@ -115,7 +115,6 @@ async def send_message(
         content=payload.content,
         user_name=user.full_name,
         stress_level=payload.stress_level or 2,
-        sleep_hours=payload.sleep_hours or 7.0,
         recent_symptoms=payload.recent_symptoms or []
     )
 
@@ -155,6 +154,9 @@ async def stream_message(
     await db.commit()
     await db.refresh(user_msg)
 
+    # 2. Lấy số giờ ngủ thực tế từ DB trong 36h gần nhất (bỏ qua payload.sleep_hours do client gửi)
+    recent_sleep = await ChatService.get_recent_sleep_hours(db, user.id)
+
     async def event_generator():
         collected_chunks = []
         rag_sources_cache = []
@@ -164,7 +166,7 @@ async def stream_message(
                 query=payload.content,
                 user_name=user.full_name,
                 stress_level=payload.stress_level or 2,
-                sleep_hours=payload.sleep_hours or 7.0,
+                sleep_hours=recent_sleep,
                 recent_symptoms=payload.recent_symptoms or [],
                 user_id=str(user.id),
                 db=db,

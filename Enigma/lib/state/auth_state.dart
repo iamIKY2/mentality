@@ -5,6 +5,7 @@ import '../core/utils/storage.dart';
 import '../core/constants/app_constants.dart';
 import '../core/api/api_client.dart';
 import '../core/services/sync_service.dart';
+import '../core/services/push_notification_service.dart';
 import '../core/onboarding/services/feature_onboarding_service.dart';
 import 'package:dio/dio.dart';
 
@@ -160,6 +161,7 @@ class AuthState extends ChangeNotifier {
           _user = User.fromJson(response.data['user']);
           await StorageUtil.saveCachedUser(_user!);
           _isOfflineMode = false;
+          PushNotificationService.syncTokenWithBackend();
         }
       }
     } on DioException catch (dioErr) {
@@ -223,6 +225,7 @@ class AuthState extends ChangeNotifier {
         _isOfflineMode = false;
         FeatureOnboardingService.instance.initForUser(_user?.id);
         SyncService.instance.syncPendingData();
+        PushNotificationService.syncTokenWithBackend();
       }
       return true;
     } on DioException catch (e) {
@@ -331,6 +334,7 @@ class AuthState extends ChangeNotifier {
       _isOfflineMode = false;
       FeatureOnboardingService.instance.initForUser(_user?.id);
       SyncService.instance.syncPendingData();
+      PushNotificationService.syncTokenWithBackend();
       return true;
     } on DioException catch (e) {
       if (e.response?.data is Map && e.response?.data['detail'] != null) {
@@ -388,6 +392,7 @@ class AuthState extends ChangeNotifier {
         _isOfflineMode = false;
         FeatureOnboardingService.instance.initForUser(_user?.id);
         SyncService.instance.syncPendingData();
+        PushNotificationService.syncTokenWithBackend();
       }
       return true;
     } on DioException catch (e) {
