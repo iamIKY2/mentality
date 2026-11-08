@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import '../utils/storage.dart';
+import '../startup/runtime_diagnostics.dart';
 import '../constants/app_constants.dart';
 import '../../models/catalog_item.dart';
 
@@ -38,6 +39,11 @@ class ApiClient {
 
         // ── Auto-refresh on 401 ────────────────────────────────────────────
         onError: (DioException e, handler) async {
+          // Keep request/response bodies, headers, URLs and tokens out of logs.
+          RuntimeDiagnostics.log(
+            'API request failed: method=${e.requestOptions.method} '
+            'status=${e.response?.statusCode ?? 'unavailable'} type=${e.type.name}',
+          );
           if (e.response?.statusCode != 401) {
             return handler.next(e);
           }

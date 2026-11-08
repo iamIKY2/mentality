@@ -37,7 +37,7 @@ dependencies:
   provider: ^6.1.2
   dio: ^5.7.0
   shared_preferences: ^2.3.2
-  google_fonts: ^6.2.1
+  google_fonts: ^6.3.3
   intl: ^0.19.0
   flutter_animate: ^4.5.0
   flutter_secure_storage: ^9.2.2
@@ -82,6 +82,9 @@ flutter_launcher_icons:
 
 # The following section is specific to Flutter packages.
 flutter:
+  # Some pinned native plugins still require CocoaPods.
+  config:
+    enable-swift-package-manager: false
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

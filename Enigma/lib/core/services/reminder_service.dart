@@ -7,6 +7,7 @@ import 'package:flutter_timezone/flutter_timezone.dart';
 
 import '../../main.dart' show navigatorKey;
 import '../utils/storage.dart';
+import '../startup/runtime_diagnostics.dart';
 import '../../screens/student/life_log_screen.dart';
 
 /// Dịch vụ quản lý thông báo nhắc nhở ghi nhận nhật ký giấc ngủ mỗi ngày
@@ -95,7 +96,8 @@ class ReminderService {
 
       // 5. Lên lịch thông báo theo cài đặt hiện tại
       await rescheduleAll();
-    } catch (e) {
+    } catch (e, stack) {
+      RuntimeDiagnostics.error('Reminder initialization failed', e, stack);
       debugPrint('[ReminderService] Lỗi khởi tạo: $e');
     }
   }

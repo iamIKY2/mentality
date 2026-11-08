@@ -26,6 +26,14 @@
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Enigma sử dụng Face ID để xác thực khi bạn bật đăng nhập sinh trắc học.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Enigma sử dụng vị trí khi bạn mở ứng dụng để xác định nơi thực tập hoặc ký túc xá và hỗ trợ ghi nhật ký sinh hoạt.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

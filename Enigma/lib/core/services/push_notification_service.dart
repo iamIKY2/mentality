@@ -6,6 +6,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../../firebase_options.dart';
 import '../api/api_client.dart';
 import '../utils/storage.dart';
+import '../startup/runtime_diagnostics.dart';
 import '../../main.dart' show navigatorKey;
 
 // Top-level background handler required by Firebase
@@ -108,8 +109,9 @@ class PushNotificationService {
         _sendTokenToBackend(newToken);
       });
 
-    } catch (e) {
-      debugPrint('[FCM] Init error (continuing in safe mode): ');
+    } catch (e, stack) {
+      RuntimeDiagnostics.error('FCM initialization failed', e, stack);
+      debugPrint('[FCM] Init error (continuing in safe mode): $e');
     }
   }
 
@@ -150,8 +152,9 @@ class PushNotificationService {
         debugPrint('[FCM] Device Token: ');
         await _sendTokenToBackend(token);
       }
-    } catch (e) {
-      debugPrint('[FCM] Get token error: ');
+    } catch (e, stack) {
+      RuntimeDiagnostics.error('FCM token failed', e, stack);
+      debugPrint('[FCM] Get token error: $e');
     }
   }
 

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb;
+import 'package:flutter/services.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import '../models/user.dart';
 import '../core/utils/storage.dart';
@@ -301,6 +303,18 @@ class AuthState extends ChangeNotifier {
         await StorageUtil.saveToken('mock_google_access_token');
         await StorageUtil.saveRefreshToken('mock_google_refresh_token');
         return true;
+      }
+
+      // Avoid entering the native Google SDK without an iOS client ID and
+      // callback URL scheme. The SDK can raise a native exception in that case.
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.iOS) {
+        final configured = await const MethodChannel('enigma/ios_configuration')
+            .invokeMethod<bool>('isGoogleSignInConfigured');
+        if (configured != true) {
+          _error = 'Đăng nhập Google chưa được cấu hình trên iOS. '
+              'Vui lòng đăng nhập bằng email hoặc tiếp tục với tư cách khách.';
+          return false;
+        }
       }
 
       // Đăng xuất phiên cũ nếu có để cho phép user chọn tài khoản

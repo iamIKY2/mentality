@@ -76,9 +76,17 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
       case 'reminder_journal':
         return (Icons.auto_stories_rounded, AppTheme.accentPurple, 'Nhật ký');
       case 'streak_warning':
-        return (Icons.local_fire_department_rounded, AppTheme.accentCoral, 'Chuỗi ngày');
+        return (
+          Icons.local_fire_department_rounded,
+          AppTheme.accentCoral,
+          'Chuỗi ngày'
+        );
       default:
-        return (Icons.notifications_rounded, const Color(0xFF38BDF8), 'Thông báo');
+        return (
+          Icons.notifications_rounded,
+          const Color(0xFF38BDF8),
+          'Thông báo'
+        );
     }
   }
 
@@ -101,11 +109,16 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         actions: [
           if (notifState.unreadCount > 0)
             TextButton.icon(
-              onPressed: () => context.read<NotificationState>().markAllAsRead(),
-              icon: const Icon(Icons.done_all_rounded, size: 16, color: AppTheme.primaryLight),
+              onPressed: () =>
+                  context.read<NotificationState>().markAllAsRead(),
+              icon: const Icon(Icons.done_all_rounded,
+                  size: 16, color: AppTheme.primaryLight),
               label: const Text(
                 'Đã đọc tất cả',
-                style: TextStyle(color: AppTheme.primaryLight, fontSize: 13, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                    color: AppTheme.primaryLight,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600),
               ),
             ),
         ],
@@ -118,13 +131,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
             child: Row(
               children: [
                 _buildFilterChip(
-                  label: 'Tất cả ()',
+                  label: 'Tất cả ',
                   selected: !_filterUnreadOnly,
                   onTap: () => setState(() => _filterUnreadOnly = false),
                 ),
                 const SizedBox(width: 8),
                 _buildFilterChip(
-                  label: 'Chưa đọc ()',
+                  label: 'Chưa đọc ',
                   selected: _filterUnreadOnly,
                   onTap: () => setState(() => _filterUnreadOnly = true),
                 ),
@@ -135,7 +148,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           // ── Notification List ──────────────────────────────────────────────
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () => context.read<NotificationState>().fetchNotifications(),
+              onRefresh: () =>
+                  context.read<NotificationState>().fetchNotifications(),
               color: AppTheme.primary,
               child: notifState.isLoading && notifState.notifications.isEmpty
                   ? const Center(child: CircularProgressIndicator())
@@ -144,7 +158,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       : ListView.separated(
                           padding: const EdgeInsets.fromLTRB(16, 6, 16, 24),
                           itemCount: items.length,
-                          separatorBuilder: (_, __) => const SizedBox(height: 10),
+                          separatorBuilder: (_, __) =>
+                              const SizedBox(height: 10),
                           itemBuilder: (ctx, index) {
                             final item = items[index];
                             return _buildNotificationCard(ctx, item, isDark);
@@ -175,14 +190,18 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   : AppTheme.bgLightSurfaceAlt),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: selected ? AppTheme.primaryLight : AppTheme.borderColor(context),
+            color: selected
+                ? AppTheme.primaryLight
+                : AppTheme.borderColor(context),
             width: selected ? 1.5 : 1,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: selected ? AppTheme.primaryLight : AppTheme.onSurfaceSecondary(context),
+            color: selected
+                ? AppTheme.primaryLight
+                : AppTheme.onSurfaceSecondary(context),
             fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
             fontSize: 13,
           ),
@@ -191,7 +210,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     );
   }
 
-  Widget _buildNotificationCard(BuildContext context, NotificationItem item, bool isDark) {
+  Widget _buildNotificationCard(
+      BuildContext context, NotificationItem item, bool isDark) {
     final (icon, iconColor, typeLabel) = _getTypeMeta(item.type);
 
     return Material(
@@ -204,7 +224,9 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             color: item.isRead
-                ? (isDark ? AppTheme.bgSurface.withOpacity(0.6) : AppTheme.bgLightSurfaceAlt.withOpacity(0.7))
+                ? (isDark
+                    ? AppTheme.bgSurface.withOpacity(0.6)
+                    : AppTheme.bgLightSurfaceAlt.withOpacity(0.7))
                 : (isDark ? AppTheme.bgSurfaceLight : Colors.white),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
@@ -249,7 +271,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       children: [
                         // Type Tag
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: iconColor.withOpacity(0.12),
                             borderRadius: BorderRadius.circular(6),
@@ -279,7 +302,8 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                       style: TextStyle(
                         color: AppTheme.onSurface(context),
                         fontSize: 14.5,
-                        fontWeight: item.isRead ? FontWeight.w600 : FontWeight.w800,
+                        fontWeight:
+                            item.isRead ? FontWeight.w600 : FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -327,11 +351,14 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
               color: AppTheme.primary.withOpacity(0.12),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.notifications_none_rounded, size: 40, color: AppTheme.primaryLight),
+            child: const Icon(Icons.notifications_none_rounded,
+                size: 40, color: AppTheme.primaryLight),
           ),
           const SizedBox(height: 18),
           Text(
-            _filterUnreadOnly ? 'Không có thông báo chưa đọc' : 'Chưa có thông báo nào',
+            _filterUnreadOnly
+                ? 'Không có thông báo chưa đọc'
+                : 'Chưa có thông báo nào',
             style: TextStyle(
               color: AppTheme.onSurface(context),
               fontSize: 16,

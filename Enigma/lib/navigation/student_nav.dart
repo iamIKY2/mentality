@@ -35,12 +35,17 @@ class StudentNavState extends State<StudentNav> {
 
   int _currentIndex = 0;
   bool _isNavVisible = true;
+  bool _isNavHiddenByScroll = false;
+  double _scrollDistance = 0;
+  static const double _scrollThreshold = 12;
   String? _pendingChatPrompt;
 
   final GlobalKey<HomeScreenState> _homeKey = GlobalKey<HomeScreenState>();
   final GlobalKey<TasksScreenState> _tasksKey = GlobalKey<TasksScreenState>();
-  final GlobalKey<CheckinGachaScreenState> _checkinKey = GlobalKey<CheckinGachaScreenState>();
-  final GlobalKey<HandbookScreenState> _handbookKey = GlobalKey<HandbookScreenState>();
+  final GlobalKey<CheckinGachaScreenState> _checkinKey =
+      GlobalKey<CheckinGachaScreenState>();
+  final GlobalKey<HandbookScreenState> _handbookKey =
+      GlobalKey<HandbookScreenState>();
   final GlobalKey<ChatScreenState> _chatKey = GlobalKey<ChatScreenState>();
 
   final Set<int> _autoStartedTabs = {};
@@ -71,6 +76,8 @@ class StudentNavState extends State<StudentNav> {
     setState(() {
       _currentIndex = index;
       _isNavVisible = true;
+      _isNavHiddenByScroll = false;
+      _scrollDistance = 0;
     });
     _triggerTabTourIfNeeded(index);
   }
@@ -103,6 +110,8 @@ class StudentNavState extends State<StudentNav> {
       _screens[2] = CheckinGachaScreen(key: _checkinKey, initialMood: mood);
       _currentIndex = 2;
       _isNavVisible = true;
+      _isNavHiddenByScroll = false;
+      _scrollDistance = 0;
     });
     _triggerTabTourIfNeeded(2);
   }
@@ -112,7 +121,8 @@ class StudentNavState extends State<StudentNav> {
     if (featureKey == null) return;
 
     final service = FeatureOnboardingService.instance;
-    if (service.hasCompleted(featureKey) || _autoStartedTabs.contains(tabIndex)) {
+    if (service.hasCompleted(featureKey) ||
+        _autoStartedTabs.contains(tabIndex)) {
       return;
     }
     _autoStartedTabs.add(tabIndex);
@@ -146,9 +156,43 @@ class StudentNavState extends State<StudentNav> {
   }
 
   void setNavVisible(bool visible) {
-    if (mounted && _isNavVisible != visible) {
-      setState(() => _isNavVisible = visible);
+    if (mounted) {
+      setState(() {
+        _isNavVisible = visible;
+        _isNavHiddenByScroll = false;
+        _scrollDistance = 0;
+      });
     }
+  }
+
+  bool _onScrollNotification(ScrollNotification notification) {
+    // Listen inside each active tab so horizontal tabs and offstage screens
+    // cannot change the navigation bar. Keep notifications bubbling for refresh.
+    if (notification.metrics.axis != Axis.vertical || !_isNavVisible) {
+      return false;
+    }
+    if (notification is ScrollStartNotification) {
+      _scrollDistance = 0;
+    } else if (notification is ScrollUpdateNotification &&
+        notification.dragDetails != null &&
+        !notification.metrics.outOfRange) {
+      final delta = notification.scrollDelta ?? 0;
+      if (delta == 0) return false;
+      if (_scrollDistance.sign != delta.sign) _scrollDistance = 0;
+      _scrollDistance += delta;
+
+      // Ignore tiny gestures, ballistic scrolling and iOS edge bounce.
+      if (_scrollDistance.abs() >= _scrollThreshold) {
+        final hide = notification.metrics.axisDirection == AxisDirection.down
+            ? _scrollDistance > 0
+            : _scrollDistance < 0;
+        if (_isNavHiddenByScroll != hide) {
+          setState(() => _isNavHiddenByScroll = hide);
+        }
+        _scrollDistance = 0;
+      }
+    }
+    return false;
   }
 
   late final List<Widget> _screens = [
@@ -162,6 +206,8 @@ class StudentNavState extends State<StudentNav> {
   @override
   Widget build(BuildContext context) {
     final isKeyboardOpen = MediaQuery.of(context).viewInsets.bottom > 0;
+    final showNavigation =
+        _isNavVisible && !_isNavHiddenByScroll && !isKeyboardOpen;
 
     return Scaffold(
       body: Column(
@@ -172,14 +218,40 @@ class StudentNavState extends State<StudentNav> {
               index: _currentIndex,
               children: [
                 for (int i = 0; i < _screens.length; i++)
-                  TickerMode(enabled: _currentIndex == i, child: _screens[i]),
+                  NotificationListener<ScrollNotification>(
+                    onNotification:
+                        _currentIndex == i ? _onScrollNotification : null,
+                    child: TickerMode(
+                      enabled: _currentIndex == i,
+                      child: _screens[i],
+                    ),
+                  ),
               ],
             ),
           ),
         ],
       ),
-      bottomNavigationBar: _isNavVisible && !isKeyboardOpen
-          ? NavigationBar(
+      bottomNavigationBar: TweenAnimationBuilder<double>(
+        tween: Tween<double>(begin: 1, end: showNavigation ? 1 : 0),
+        duration: MediaQuery.disableAnimationsOf(context)
+            ? Duration.zero
+            : const Duration(milliseconds: 220),
+        curve: Curves.easeInOutCubic,
+        builder: (context, value, child) => ClipRect(
+          child: Align(
+            alignment: Alignment.topCenter,
+            heightFactor: value,
+            child: FractionalTranslation(
+              translation: Offset(0, 1 - value),
+              child: child,
+            ),
+          ),
+        ),
+        child: IgnorePointer(
+          ignoring: !showNavigation,
+          child: ExcludeSemantics(
+            excluding: !showNavigation,
+            child: NavigationBar(
               selectedIndex: _currentIndex,
               onDestinationSelected: switchToTab,
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -210,8 +282,10 @@ class StudentNavState extends State<StudentNav> {
                   label: 'Trò chuyện',
                 ),
               ],
-            )
-          : null,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

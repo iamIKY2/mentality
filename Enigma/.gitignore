@@ -33,6 +33,16 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Generated iOS SDK paths and native dependencies (keep ios/Podfile.lock).
+/ios/Pods/
+/ios/.symlinks/
+/ios/Flutter/ephemeral/
+/ios/Flutter/Generated.xcconfig
+/ios/Flutter/flutter_export_environment.sh
+/ios/Flutter/Flutter.framework/
+/ios/Flutter/App.framework/
+/ios/Flutter/Flutter.podspec
+
 # Symbolication related
 app.*.symbols
 

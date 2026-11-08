@@ -1,0 +1,44 @@
+workflows:
+  ios-unsigned:
+    name: Enigma iOS - Unsigned IPA
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      # Match the Flutter/Dart SDK used by this project.
+      flutter: 3.47.5
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Install Flutter dependencies
+        script: |
+          set -euo pipefail
+          flutter --version
+          flutter pub get
+      - name: Analyze and test
+        script: |
+          set -euo pipefail
+          flutter analyze --no-pub
+          flutter test --no-pub
+      - name: Validate iOS configuration and install pods
+        script: |
+          set -euo pipefail
+          plutil -lint ios/Runner/Info.plist ios/Runner/Runner.entitlements ios/Flutter/AppFrameworkInfo.plist ios/Runner.xcodeproj/project.pbxproj
+          ruby -c ios/Podfile
+          cd ios
+          pod install --repo-update
+      - name: Build iOS release without signing
+        script: |
+          set -euo pipefail
+          flutter build ios --release --no-codesign
+      - name: Package unsigned IPA
+        script: |
+          set -euo pipefail
+          test -d build/ios/iphoneos/Runner.app
+          staging_dir="$(mktemp -d)"
+          mkdir -p "$staging_dir/Payload" "$CM_BUILD_DIR/build/ios/ipa"
+          ditto build/ios/iphoneos/Runner.app "$staging_dir/Payload/Runner.app"
+          cd "$staging_dir"
+          /usr/bin/zip -qry "$CM_BUILD_DIR/build/ios/ipa/Enigma-unsigned.ipa" Payload
+          /usr/bin/unzip -t "$CM_BUILD_DIR/build/ios/ipa/Enigma-unsigned.ipa"
+    artifacts:
+      - build/ios/ipa/Enigma-unsigned.ipa

@@ -9,6 +9,7 @@ import '../core/services/reminder_service.dart';
 import '../core/utils/storage.dart';
 import 'student/profile_screen.dart';
 import 'auth/login_screen.dart';
+import 'app_logs_screen.dart';
 import '../widgets/app_avatar.dart';
 
 class SettingsScreen extends StatelessWidget {
@@ -255,6 +256,18 @@ class SettingsScreen extends StatelessWidget {
           // ── About ────────────────────────────────────────────────────────────
           _SectionHeader(title: 'Thông tin ứng dụng', icon: Icons.info_rounded, color: AppTheme.secondary),
           const SizedBox(height: 12),
+          _SettingsTile(
+            context: context,
+            icon: Icons.receipt_long_rounded,
+            iconColor: AppTheme.secondary,
+            title: 'Nhật ký ứng dụng',
+            subtitle: 'Xem và sao chép log để kiểm tra sự cố',
+            trailing: Icon(Icons.chevron_right_rounded, color: AppTheme.onSurfaceMuted(context)),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => const AppLogsScreen()),
+            ),
+          ),
+          const SizedBox(height: 10),
           _SettingsTile(
             context: context,
             icon: Icons.star_rounded,
