@@ -80,13 +80,25 @@ class AdvancedRAGService:
         clean_q = query.lower()
 
         topic_mappings = [
+            (["ăn uống", "cơm", "quán ăn", "chợ", "canteen", "tràng duệ", "đồ ăn", "nước uống"], "mẹo ăn uống tiết kiệm và an toàn quanh KCN Tràng Duệ và An Dương"),
+            (["thuê phòng", "tìm phòng", "thuê trọ", "tìm trọ", "giá điện nước", "an ninh phòng trọ"], "kinh nghiệm thuê phòng trọ an ninh và chi phí hợp lý gần khu công nghiệp"),
+            (["bạn cùng phòng", "ở ghép", "lệch ca", "mâu thuẫn phòng", "giờ yên tĩnh"], "quy tắc ứng xử và giải quyết mâu thuẫn phòng trọ khi lệch ca làm việc"),
+            (["tài chính", "tiết kiệm", "chi tiêu", "tiền ăn ở", "quản lý tiền", "quản lý tài chính", "tín dụng đen"], "kỹ năng quản lý tài chính và chi tiêu thông minh với tiền phụ cấp thực tập"),
+            (["ot", "làm thêm", "tăng ca", "phụ cấp ca đêm", "lương làm thêm", "tiền lương", "hợp đồng thực tập"], "quy định làm thêm giờ OT, phụ cấp ca đêm và quyền lợi hợp đồng thực tập"),
             (["đau chân", "giày", "esd", "mỏi chân", "gót chân", "bàn chân"], "kinh nghiệm giảm đau chân khi mang giày bảo hộ ESD ca đứng"),
-            (["ngủ", "ca đêm", "mất ngủ", "đổi ca", "nhịp sinh học", "uể oải"], "bí quyết cân bằng nhịp sinh học và giấc ngủ khi đổi ca làm việc"),
+            (["ngủ", "mất ngủ", "khó ngủ", "giấc ngủ", "đổi ca", "nhịp sinh học", "uể oải"], "bí quyết cân bằng nhịp sinh học và giấc ngủ khi đổi ca làm việc"),
             (["stress", "thở", "căng thẳng", "áp lực", "lo lắng", "sợ", "hoảng"], "kỹ thuật hít thở Box Breathing 4-4-4-4 giảm căng thẳng tức thì"),
             (["vai gáy", "cổ", "mỏi vai", "đau lưng", "giãn cơ", "đứng lâu"], "chăm sóc thể chất và bài tập giãn cơ cổ vai gáy ca đứng"),
-            (["phòng", "ktx", "trọ", "bạn cùng phòng", "ở ghép", "tiếng ồn"], "kỹ năng xử lý bất đồng bạn cùng phòng ký túc xá và đổi phòng trọ"),
-            (["5s", "an toàn", "quy tắc", "bảo hộ", "nội quy", "quần áo"], "quy tắc 5S và an toàn lao động tại nhà máy"),
-            (["lương", "phụ cấp", "hợp đồng", "nghỉ phép", "đổi ca", "quyền lợi"], "cẩm nang tìm hiểu hợp đồng, phụ cấp và an toàn lao động thực tập sinh"),
+            (["sơ cứu", "chóng mặt", "vã mồ hôi", "sắp ngất", "say nắng", "hạ đường huyết", "tụt huyết áp", "kiệt sức"], "kinh nghiệm sơ cứu nhanh kiệt sức do nhiệt, tụt đường huyết và say nắng"),
+            (["bảo hiểm", "bhyt", "khám chữa bệnh", "vneid", "tai nạn lao động"], "chính sách bảo hiểm y tế, bảo hiểm tai nạn lao động cho thực tập sinh"),
+            (["tiếng ồn", "ồn ào", "kính hiển vi", "mờ mắt", "soi kính", "còi báo", "chống ồn"], "mẹo thích nghi với tiếng ồn còi báo và môi trường áp lực cao trong xưởng"),
+            (["5s", "an toàn lao động", "an toàn", "quy tắc 5s", "bảo hộ", "nội quy", "quần áo"], "quy tắc 5S và an toàn lao động tại nhà máy"),
+            (["nghỉ phép", "xin nghỉ", "ốm", "sốt", "đổi ca", "bệnh", "trạm xá"], "quy trình xin nghỉ phép đổi ca làm việc và xử lý khi bị ốm sốt đột xuất"),
+            (["xe bus", "xe buýt", "đưa đón", "đi lại", "tuyến xe", "điểm đón"], "kinh nghiệm sử dụng xe buýt đưa đón nhân viên và văn hóa đi xe an toàn"),
+            (["báo cáo sự cố", "giao tiếp", "hỏi leader", "trao đổi mentor", "thao tác chuẩn", "sop", "trưởng ca", "tác phong"], "cách giao tiếp hiệu quả và báo cáo sự cố với Line Leader, Mentor và quản lý ca"),
+            (["dừng khẩn", "e-stop", "kẹt máy", "kẹt hàng", "tiếng lạ", "máy móc", "sự cố máy"], "hướng dẫn xử lý sự cố an toàn, nút dừng khẩn cấp E-Stop và cảnh báo máy"),
+            (["trái ngành", "nản", "chán", "áp lực chuyền", "học đại học"], "tâm thế thích ứng khi làm việc trái ngành tại nhà máy sản xuất"),
+            (["báo cáo", "nhật ký", "tốt nghiệp", "điểm thực tập", "đánh giá mentor"], "hướng dẫn viết nhật ký thực tập và hoàn thành báo cáo tốt nghiệp đạt điểm cao"),
             (["phq", "phq4", "phq-4", "sàng lọc", "tâm thần", "trầm cảm", "lo âu", "gad", "gad-7"], "quy trình sàng lọc sức khỏe tâm thần chuẩn y khoa PHQ-4 và phân tầng can thiệp"),
         ]
 
