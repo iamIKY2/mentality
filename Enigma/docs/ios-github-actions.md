@@ -1,6 +1,6 @@
 # Tạo IPA không ký bằng GitHub Actions từ Windows
 
-Workflow: `.github/workflows/build.yml`.
+Workflow: `.github/workflows/ios-unsigned.yml`.
 
 ## Chạy build
 
@@ -29,29 +29,6 @@ TestFlight/App Store. Có thể tải về để ký sau. Đây là bản cho th
 không phải iOS Simulator.
 
 Không cần dùng `codemagic.yaml` khi chạy workflow này.
-
-## Kiểm tra màn hình trắng
-
-Giữ bật **Enable application logs** khi chạy workflow để ghi log
-khởi động vào device console và **Cài đặt → Thông tin ứng dụng → Nhật ký ứng dụng**.
-Trang nhật ký cập nhật trực tiếp, có tìm kiếm, sao chép các mục đang lọc và xóa
-nhật ký. Giữ tối đa 200 mục trong phiên hiện tại, mất khi tiến trình khởi động lại.
-Không ghi nội dung request/response, URL, token hay mật khẩu vào trang này.
-IPA vẫn là bản release; không có nút Debug nổi.
-
-`ENIGMA_DIAGNOSTICS=true` chỉ bật ghi log; `main.dart` gọi `AppBootstrap` để
-hiển thị giao diện trước khi chờ các dịch vụ. Workflow chạy kiểm thử
-entry point thật ở cả cấu hình thông thường và cấu hình bật chẩn đoán.
-
-Artifact **Enigma-ios-build-logs** chứa `ios-build.log` và `build-info.txt` (commit,
-số lần build, trạng thái diagnostics). Số lần build cũng được dùng làm build
-number và ghi trong log khởi động, để xác định bản IPA đang thử.
-
-Log build thành công không cho biết lỗi lúc mở trên iPhone. Nếu bản đã nối
-bootstrap vẫn trắng hoàn toàn, không có chữ Enigma, cần device console
-hoặc crash log lúc mở app để kiểm tra native launch/engine/chữ ký. Không thể kết
-luận nguyên nhân đó chỉ từ `ios-build.log`.
-
 Chưa chạy build macOS thực tế trong workspace Windows; nếu build thất bại,
 mở bước màu đỏ trong Actions để lấy log. Nếu báo không tìm thấy Flutter `3.47.5`,
 cần kiểm tra SDK dịch vụ cung cấp và khả năng tương thích với yêu cầu Dart

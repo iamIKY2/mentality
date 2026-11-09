@@ -64,7 +64,7 @@ END $$;
 -- 5. Seed partner companies (excluding the in-memory 'custom' entry)
 INSERT INTO companies (code, name, short_name, latitude, longitude, radius_meters, workplace_type, is_approved)
 VALUES
-('lg_display_hp',   'LG Display Hải Phòng',                  'LG Display',   20.8865, 106.5821, 600,  'factory_locker', true),
+('lg_display_hp',   'LG Display Hải Phòng',                  'LG Display',   10.9902032, 106.6642095, 600,  'factory_locker', true),
 ('samsung_sevt_tn', 'Samsung Electronics Thái Nguyên (SEVT)', 'Samsung SEVT', 21.4650, 105.8690, 800,  'factory_locker', true),
 ('samsung_sdv_bn',  'Samsung Display Bắc Ninh (SDV)',        'Samsung SDV',  21.2035, 105.9754, 800,  'factory_locker', true),
 ('fpt_software_hl', 'FPT Software Hòa Lạc (F-Ville)',         'FPT Software', 21.0131, 105.5273, 500,  'office',         true),

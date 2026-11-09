@@ -11,7 +11,6 @@ import '../widgets/app_avatar.dart';
 import 'assessment_screen.dart';
 import 'breathing_screen.dart';
 import 'career_reflection_screen.dart';
-import 'student/journal_screen.dart';
 import 'student/life_log_screen.dart';
 import 'student/profile_screen.dart';
 import 'student/complete_profile_screen.dart';
@@ -104,16 +103,6 @@ class HomeScreenState extends State<HomeScreen> {
       context,
       MaterialPageRoute(builder: (ctx) => const CareerReflectionScreen()),
     );
-  }
-
-  void _openJournal(BuildContext context) async {
-    final res = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (ctx) => const JournalScreen()),
-    );
-    if (res == true && context.mounted) {
-      context.read<AppState>().triggerRefresh();
-    }
   }
 
   void _showSafetyDisclaimer(BuildContext context) {
@@ -604,17 +593,8 @@ class HomeScreenState extends State<HomeScreen> {
                       key: _quickActionsKey,
                       tilePadding: EdgeInsets.zero,
                       title: const Text('Chăm sóc bản thân'),
-                      subtitle: const Text('Nhật ký, hít thở và định hướng'),
+                      subtitle: const Text('Hít thở và định hướng'),
                       children: [
-                        _buildActionTile(
-                          context,
-                          icon: Icons.edit_note_rounded,
-                          title: 'Viết nhật ký',
-                          subtitle: 'Ghi lại điều bạn đang nghĩ',
-                          color: AppTheme.primary,
-                          onTap: () => _openJournal(context),
-                        ),
-                        const SizedBox(height: 8),
                         _buildActionTile(
                           context,
                           icon: Icons.air_rounded,

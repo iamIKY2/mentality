@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import '../core/services/breathing_audio_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/breathing_music_card.dart';
 
 class BreathingScreen extends StatefulWidget {
   const BreathingScreen({super.key});
@@ -10,21 +11,28 @@ class BreathingScreen extends StatefulWidget {
   State<BreathingScreen> createState() => _BreathingScreenState();
 }
 
-class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProviderStateMixin {
+class _BreathingScreenState extends State<BreathingScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
 
-  final BreathingAudioService _audioService = BreathingAudioService();
+  late final BreathingAudioService _audioService = BreathingAudioService();
 
   Timer? _timer;
   int _secondsLeft = 180; // 3 phút
   int _phaseSeconds = 4;
   int _phaseIndex = 0; // 0: Inhale, 1: Hold, 2: Exhale, 3: Hold
-  bool _isRunning = true;
+  bool _isRunning = false;
+  bool _hasStarted = false;
   bool _isSoundEnabled = true;
   bool _isHapticEnabled = true;
 
-  final List<String> _phases = ['Hít vào nhẹ nhàng', 'Giữ hơi', 'Thở ra chậm rãi', 'Thư giãn'];
+  final List<String> _phases = [
+    'Hít vào nhẹ nhàng',
+    'Giữ hơi',
+    'Thở ra chậm rãi',
+    'Thư giãn'
+  ];
   final List<String> _phaseSubtitles = [
     'Hít sâu bằng mũi, căng lồng ngực...',
     'Giữ hơi thở tĩnh lặng...',
@@ -44,14 +52,13 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
     _scaleAnimation = Tween<double>(begin: 0.7, end: 1.2).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
     );
-
-    _startSession();
   }
 
   void _startSession() {
+    _hasStarted = true;
     _isRunning = true;
     _controller.forward();
-    
+
     // Phát âm thanh chuông nhẹ mở đầu phiên
     if (_isSoundEnabled) {
       _audioService.playPhaseChange(enableHaptic: _isHapticEnabled);
@@ -150,10 +157,15 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
         actions: [
           IconButton(
             icon: Icon(
-              _isHapticEnabled ? Icons.vibration_rounded : Icons.phone_android_rounded,
-              color: _isHapticEnabled ? AppTheme.accentMint : AppTheme.onSurfaceSecondary(context),
+              _isHapticEnabled
+                  ? Icons.vibration_rounded
+                  : Icons.phone_android_rounded,
+              color: _isHapticEnabled
+                  ? AppTheme.accentMint
+                  : AppTheme.onSurfaceSecondary(context),
             ),
-            tooltip: _isHapticEnabled ? 'Tắt phản hồi rung' : 'Bật phản hồi rung',
+            tooltip:
+                _isHapticEnabled ? 'Tắt phản hồi rung' : 'Bật phản hồi rung',
             onPressed: () {
               setState(() {
                 _isHapticEnabled = !_isHapticEnabled;
@@ -162,15 +174,21 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
           ),
           IconButton(
             icon: Icon(
-              _isSoundEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
-              color: _isSoundEnabled ? AppTheme.accentMint : AppTheme.onSurfaceSecondary(context),
+              _isSoundEnabled
+                  ? Icons.volume_up_rounded
+                  : Icons.volume_off_rounded,
+              color: _isSoundEnabled
+                  ? AppTheme.accentMint
+                  : AppTheme.onSurfaceSecondary(context),
             ),
-            tooltip: _isSoundEnabled ? 'Tắt âm thanh đếm nhịp' : 'Bật âm thanh đếm nhịp',
+            tooltip: _isSoundEnabled
+                ? 'Tắt âm thanh đếm nhịp'
+                : 'Bật âm thanh đếm nhịp',
             onPressed: () {
               setState(() {
                 _isSoundEnabled = !_isSoundEnabled;
               });
-              if (_isSoundEnabled) {
+              if (_isSoundEnabled && _isRunning) {
                 _audioService.playPhaseChange(enableHaptic: _isHapticEnabled);
               }
             },
@@ -179,7 +197,7 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
         ],
       ),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           child: Column(
             children: [
@@ -191,7 +209,8 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                 runSpacing: 8,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                     decoration: BoxDecoration(
                       color: AppTheme.surfaceAltColor(context),
                       borderRadius: BorderRadius.circular(20),
@@ -223,20 +242,22 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                       setState(() {
                         _isSoundEnabled = !_isSoundEnabled;
                       });
-                      if (_isSoundEnabled) {
-                        _audioService.playPhaseChange(enableHaptic: _isHapticEnabled);
+                      if (_isSoundEnabled && _isRunning) {
+                        _audioService.playPhaseChange(
+                            enableHaptic: _isHapticEnabled);
                       }
                     },
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: _isSoundEnabled 
+                        color: _isSoundEnabled
                             ? AppTheme.accentMint.withValues(alpha: 0.15)
                             : AppTheme.surfaceAltColor(context),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _isSoundEnabled 
-                              ? AppTheme.accentMint.withValues(alpha: 0.5) 
+                          color: _isSoundEnabled
+                              ? AppTheme.accentMint.withValues(alpha: 0.5)
                               : AppTheme.borderColor(context),
                         ),
                       ),
@@ -244,9 +265,13 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Icon(
-                            _isSoundEnabled ? Icons.volume_up_rounded : Icons.volume_off_rounded,
+                            _isSoundEnabled
+                                ? Icons.volume_up_rounded
+                                : Icons.volume_off_rounded,
                             size: 16,
-                            color: _isSoundEnabled ? AppTheme.accentMint : AppTheme.onSurfaceSecondary(context),
+                            color: _isSoundEnabled
+                                ? AppTheme.accentMint
+                                : AppTheme.onSurfaceSecondary(context),
                           ),
                           const SizedBox(width: 6),
                           Text(
@@ -254,7 +279,9 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                             style: TextStyle(
                               fontSize: 12,
                               fontWeight: FontWeight.w600,
-                              color: _isSoundEnabled ? AppTheme.accentMint : AppTheme.onSurfaceSecondary(context),
+                              color: _isSoundEnabled
+                                  ? AppTheme.accentMint
+                                  : AppTheme.onSurfaceSecondary(context),
                             ),
                           ),
                         ],
@@ -264,7 +291,7 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                 ],
               ),
 
-              const Spacer(),
+              const SizedBox(height: 48),
 
               // Breathing Visualizer
               AnimatedBuilder(
@@ -333,10 +360,10 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 300),
                 child: Column(
-                  key: ValueKey<int>(_phaseIndex),
+                  key: ValueKey<String>('$_hasStarted-$_phaseIndex'),
                   children: [
                     Text(
-                      _phases[_phaseIndex],
+                      _hasStarted ? _phases[_phaseIndex] : 'Sẵn sàng thư giãn',
                       style: const TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w700,
@@ -345,7 +372,9 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      _phaseSubtitles[_phaseIndex],
+                      _hasStarted
+                          ? _phaseSubtitles[_phaseIndex]
+                          : 'Chọn tư thế thoải mái và nhấn Bắt đầu khi bạn sẵn sàng.',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 14,
@@ -363,25 +392,36 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   IconButton.filledTonal(
-                    onPressed: _restartSession,
+                    onPressed: _hasStarted ? _restartSession : null,
                     icon: const Icon(Icons.replay_rounded),
                     tooltip: 'Bắt đầu lại',
                   ),
                   const SizedBox(width: 16),
                   FilledButton.icon(
                     onPressed: _togglePauseResume,
-                    icon: Icon(_isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded),
-                    label: Text(_isRunning ? 'Tạm dừng' : 'Tiếp tục'),
+                    icon: Icon(_isRunning
+                        ? Icons.pause_rounded
+                        : Icons.play_arrow_rounded),
+                    label: Text(!_hasStarted
+                        ? 'Bắt đầu'
+                        : _isRunning
+                            ? 'Tạm dừng'
+                            : _secondsLeft == 0
+                                ? 'Bắt đầu lại'
+                                : 'Tiếp tục'),
                     style: FilledButton.styleFrom(
                       backgroundColor: AppTheme.accentMint,
                       foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 24, vertical: 12),
                     ),
                   ),
                 ],
               ),
 
-              const Spacer(),
+              const SizedBox(height: 24),
+              BreathingMusicCard(sessionFinished: _secondsLeft == 0),
+              const SizedBox(height: 24),
 
               // Information card
               Container(
@@ -389,12 +429,15 @@ class _BreathingScreenState extends State<BreathingScreen> with SingleTickerProv
                 decoration: AppTheme.cardDecorationFor(context),
                 child: Row(
                   children: [
-                    const Icon(Icons.lightbulb_outline_rounded, color: AppTheme.accentAmber, size: 22),
+                    const Icon(Icons.lightbulb_outline_rounded,
+                        color: AppTheme.accentAmber, size: 22),
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
                         'Kỹ thuật thở 4-4-4-4 được áp dụng rộng rãi giúp hạ cortisol, xoa dịu thần kinh sau ca làm việc căng thẳng.',
-                        style: TextStyle(fontSize: 12, color: AppTheme.onSurfaceSecondary(context)),
+                        style: TextStyle(
+                            fontSize: 12,
+                            color: AppTheme.onSurfaceSecondary(context)),
                       ),
                     ),
                   ],

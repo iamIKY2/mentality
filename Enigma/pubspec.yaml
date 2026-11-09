@@ -93,6 +93,7 @@ flutter:
 
   assets:
     - assets/icons/
+    - music/
 
 
   # An image asset can refer to one or more resolution-specific "variants", see

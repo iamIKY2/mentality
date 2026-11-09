@@ -7,12 +7,33 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:36729513984:android:6cb8056efebf76b9b8d0e5",
+        "mobilesdk_app_id": "1:36729513984:android:826c356fca005577b8d0e5",
         "android_client_info": {
-          "package_name": "com.enigmadevteam.enigma"
+          "package_name": "com.enigma.enigmateam.enigma"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "36729513984-1qv1lrf52128qo7i6ljmd5imeosr39a7.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.enigma.enigmateam.enigma",
+            "certificate_hash": "ae9cdd3139099e38e3b3fccd3c9531fadf3939b1"
+          }
+        },
+        {
+          "client_id": "36729513984-8t8c9ne77561de39c2t9dj4t3ttgv7an.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.enigma.enigmateam.enigma",
+            "certificate_hash": "723251ffb51cef6e04431cde92e5db96dfc04208"
+          }
+        },
+        {
+          "client_id": "36729513984-esqq4r98jnm3utb4grbj6gu6if5l6cqi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyBSBj4Xqz5YnvWxAqXVmVLqZAdnVCeVqgI"
@@ -20,7 +41,55 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "36729513984-esqq4r98jnm3utb4grbj6gu6if5l6cqi.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "36729513984-ap4fiqja1ocqa7qs49v8i1epjrqcquhf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.enigma.enigmateam.enigma"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:36729513984:android:6cb8056efebf76b9b8d0e5",
+        "android_client_info": {
+          "package_name": "com.enigmadevteam.enigma"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "36729513984-esqq4r98jnm3utb4grbj6gu6if5l6cqi.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBSBj4Xqz5YnvWxAqXVmVLqZAdnVCeVqgI"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "36729513984-esqq4r98jnm3utb4grbj6gu6if5l6cqi.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "36729513984-ap4fiqja1ocqa7qs49v8i1epjrqcquhf.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.enigma.enigmateam.enigma"
+              }
+            }
+          ]
         }
       }
     }

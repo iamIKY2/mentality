@@ -92,8 +92,9 @@ class ChatScreenState extends State<ChatScreen> {
       steps: [
         OnboardingStep(
           targetKey: _inputAreaKey,
-          title: 'Trợ Lý Thích Nghi AI',
-          description: 'Hỏi đáp kỹ thuật an toàn nhà máy, mẹo phục hồi thể lực và tâm sự giải tỏa căng thẳng 24/7.',
+          title: 'Trợ Lý Của Bạn',
+          description:
+              'Hỏi đáp kỹ thuật an toàn nhà máy, mẹo phục hồi thể lực và tâm sự giải tỏa căng thẳng 24/7.',
           icon: Icons.psychology_rounded,
         ),
       ],
@@ -103,7 +104,8 @@ class ChatScreenState extends State<ChatScreen> {
   Future<void> _initSession() async {
     if (AppConstants.useMockApi) return;
     try {
-      final res = await ApiClient.instance.post('/chat/sessions', data: {'title': 'Tư vấn Thích nghi & Tâm lý'});
+      final res = await ApiClient.instance.post('/chat/sessions',
+          data: {'title': 'Tư vấn Thích nghi & Tâm lý'});
       if (mounted) {
         setState(() {
           _sessionId = res.data['id'];
@@ -127,7 +129,8 @@ class ChatScreenState extends State<ChatScreen> {
   ChatMessage _buildInitialMessage() {
     return ChatMessage(
       id: 'init_welcome',
-      content: 'Chào bạn! Mình là Enigma AI — Trợ lý Đồng hành Tâm lý & Thích nghi Thực tập Doanh nghiệp. 💙\n\nBạn đang gặp khó khăn gì về nhịp ca kíp, sức khỏe đứng máy, quy trình làm việc hay cuộc sống ký túc xá không?',
+      content:
+          'Chào bạn! Mình là Enigma AI — Trợ lý Đồng hành Tâm lý & Thích nghi Thực tập Doanh nghiệp. 💙\n\nBạn đang gặp khó khăn gì về nhịp ca kíp, sức khỏe đứng máy, quy trình làm việc hay cuộc sống ký túc xá không?',
       isUser: false,
       timestamp: DateTime.now(),
       suggestedReplies: [
@@ -146,7 +149,9 @@ class ChatScreenState extends State<ChatScreen> {
     try {
       final res = await ApiClient.instance.get('/chat/sessions');
       if (res.data is List) {
-        return (res.data as List).map((j) => ChatSessionItem.fromJson(j)).toList();
+        return (res.data as List)
+            .map((j) => ChatSessionItem.fromJson(j))
+            .toList();
       }
     } catch (e) {
       debugPrint('[ChatScreen] Lỗi tải danh sách phiên trò chuyện: $e');
@@ -164,7 +169,8 @@ class ChatScreenState extends State<ChatScreen> {
     });
 
     try {
-      final res = await ApiClient.instance.get('/chat/sessions/${session.id}/messages');
+      final res =
+          await ApiClient.instance.get('/chat/sessions/${session.id}/messages');
       if (res.data is List) {
         final loaded = (res.data as List).map((m) {
           final msg = ChatMessage.fromJson(m);
@@ -175,7 +181,8 @@ class ChatScreenState extends State<ChatScreen> {
         }).toList();
         if (mounted) {
           setState(() {
-            _messages.addAll(loaded.isNotEmpty ? loaded : [_buildInitialMessage()]);
+            _messages
+                .addAll(loaded.isNotEmpty ? loaded : [_buildInitialMessage()]);
             _isLoadingSession = false;
           });
           _scrollToBottom();
@@ -248,7 +255,8 @@ class ChatScreenState extends State<ChatScreen> {
             padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
             decoration: BoxDecoration(
               color: AppTheme.surfaceColor(context),
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+              borderRadius:
+                  const BorderRadius.vertical(top: Radius.circular(24)),
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -271,11 +279,13 @@ class ChatScreenState extends State<ChatScreen> {
                   children: [
                     const Row(
                       children: [
-                        Icon(Icons.history_rounded, color: AppTheme.primary, size: 22),
+                        Icon(Icons.history_rounded,
+                            color: AppTheme.primary, size: 22),
                         SizedBox(width: 8),
                         Text(
                           'Lịch Sử Trò Chuyện',
-                          style: TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
+                          style: TextStyle(
+                              fontSize: 17, fontWeight: FontWeight.w800),
                         ),
                       ],
                     ),
@@ -288,14 +298,17 @@ class ChatScreenState extends State<ChatScreen> {
                       icon: const Icon(Icons.add_rounded, size: 16),
                       label: const Text(
                         'Đoạn chat mới',
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.w700),
+                        style: TextStyle(
+                            fontSize: 12, fontWeight: FontWeight.w700),
                       ),
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppTheme.primary,
                         foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
                         elevation: 0,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10)),
                       ),
                     ),
                   ],
@@ -337,7 +350,8 @@ class ChatScreenState extends State<ChatScreen> {
                           const SizedBox(height: 14),
                           const Text(
                             'Chưa có lịch sử trò chuyện',
-                            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+                            style: TextStyle(
+                                fontSize: 15, fontWeight: FontWeight.w700),
                           ),
                           const SizedBox(height: 6),
                           Text(
@@ -361,7 +375,8 @@ class ChatScreenState extends State<ChatScreen> {
                       itemBuilder: (ctx, index) {
                         final s = list[index];
                         final isActive = s.id == _sessionId;
-                        final timeText = _formatSessionTime(s.updatedAt ?? s.createdAt);
+                        final timeText =
+                            _formatSessionTime(s.updatedAt ?? s.createdAt);
 
                         return Container(
                           decoration: BoxDecoration(
@@ -387,7 +402,8 @@ class ChatScreenState extends State<ChatScreen> {
                                       _loadSession(s);
                                     }
                                   },
-                                  borderRadius: const BorderRadius.horizontal(left: Radius.circular(14)),
+                                  borderRadius: const BorderRadius.horizontal(
+                                      left: Radius.circular(14)),
                                   child: Padding(
                                     padding: const EdgeInsets.all(14),
                                     child: Row(
@@ -397,19 +413,24 @@ class ChatScreenState extends State<ChatScreen> {
                                           decoration: BoxDecoration(
                                             color: isActive
                                                 ? AppTheme.primary
-                                                : AppTheme.primary.withValues(alpha: 0.1),
-                                            borderRadius: BorderRadius.circular(10),
+                                                : AppTheme.primary
+                                                    .withValues(alpha: 0.1),
+                                            borderRadius:
+                                                BorderRadius.circular(10),
                                           ),
                                           child: Icon(
                                             Icons.forum_rounded,
-                                            color: isActive ? Colors.white : AppTheme.primary,
+                                            color: isActive
+                                                ? Colors.white
+                                                : AppTheme.primary,
                                             size: 18,
                                           ),
                                         ),
                                         const SizedBox(width: 12),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Row(
                                                 children: [
@@ -417,28 +438,41 @@ class ChatScreenState extends State<ChatScreen> {
                                                     child: Text(
                                                       s.title,
                                                       style: TextStyle(
-                                                        fontWeight: FontWeight.w700,
+                                                        fontWeight:
+                                                            FontWeight.w700,
                                                         fontSize: 13.5,
-                                                        color: isActive ? AppTheme.primary : null,
+                                                        color: isActive
+                                                            ? AppTheme.primary
+                                                            : null,
                                                       ),
                                                       maxLines: 1,
-                                                      overflow: TextOverflow.ellipsis,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
                                                     ),
                                                   ),
                                                   if (isActive) ...[
                                                     const SizedBox(width: 6),
                                                     Container(
-                                                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                                      padding: const EdgeInsets
+                                                          .symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 2),
                                                       decoration: BoxDecoration(
-                                                        color: AppTheme.primary.withValues(alpha: 0.15),
-                                                        borderRadius: BorderRadius.circular(6),
+                                                        color: AppTheme.primary
+                                                            .withValues(
+                                                                alpha: 0.15),
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(6),
                                                       ),
                                                       child: const Text(
                                                         'Đang mở',
                                                         style: TextStyle(
                                                           fontSize: 10,
-                                                          fontWeight: FontWeight.w700,
-                                                          color: AppTheme.primary,
+                                                          fontWeight:
+                                                              FontWeight.w700,
+                                                          color:
+                                                              AppTheme.primary,
                                                         ),
                                                       ),
                                                     ),
@@ -450,7 +484,9 @@ class ChatScreenState extends State<ChatScreen> {
                                                 timeText,
                                                 style: TextStyle(
                                                   fontSize: 11,
-                                                  color: AppTheme.onSurfaceSecondary(context),
+                                                  color: AppTheme
+                                                      .onSurfaceSecondary(
+                                                          context),
                                                 ),
                                               ),
                                             ],
@@ -465,7 +501,8 @@ class ChatScreenState extends State<ChatScreen> {
                               Padding(
                                 padding: const EdgeInsets.only(right: 6),
                                 child: IconButton(
-                                  icon: const Icon(Icons.delete_outline_rounded, size: 20),
+                                  icon: const Icon(Icons.delete_outline_rounded,
+                                      size: 20),
                                   color: Colors.red.shade400,
                                   splashRadius: 20,
                                   tooltip: 'Xóa cuộc trò chuyện',
@@ -473,21 +510,35 @@ class ChatScreenState extends State<ChatScreen> {
                                     final confirmed = await showDialog<bool>(
                                       context: historyCtx,
                                       builder: (dlgCtx) => AlertDialog(
-                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                                        title: const Text('Xóa cuộc trò chuyện?'),
-                                        content: Text('Bạn có chắc chắn muốn xóa phiên trò chuyện "${s.title}" không? Dữ liệu trò chuyện sẽ không thể khôi phục.'),
+                                        shape: RoundedRectangleBorder(
+                                            borderRadius:
+                                                BorderRadius.circular(16)),
+                                        title:
+                                            const Text('Xóa cuộc trò chuyện?'),
+                                        content: Text(
+                                            'Bạn có chắc chắn muốn xóa phiên trò chuyện "${s.title}" không? Dữ liệu trò chuyện sẽ không thể khôi phục.'),
                                         actions: [
                                           TextButton(
-                                            onPressed: () => Navigator.pop(dlgCtx, false),
+                                            onPressed: () =>
+                                                Navigator.pop(dlgCtx, false),
                                             child: const Text('Hủy'),
                                           ),
                                           ElevatedButton(
                                             style: ElevatedButton.styleFrom(
-                                              backgroundColor: AppTheme.accentCoral,
-                                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                              backgroundColor:
+                                                  AppTheme.accentCoral,
+                                              shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(
+                                                          10)),
                                             ),
-                                            onPressed: () => Navigator.pop(dlgCtx, true),
-                                            child: const Text('Xóa', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                                            onPressed: () =>
+                                                Navigator.pop(dlgCtx, true),
+                                            child: const Text('Xóa',
+                                                style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight:
+                                                        FontWeight.bold)),
                                           ),
                                         ],
                                       ),
@@ -495,32 +546,43 @@ class ChatScreenState extends State<ChatScreen> {
 
                                     if (confirmed == true) {
                                       try {
-                                        await ApiClient.instance.delete('/chat/sessions/${s.id}');
+                                        await ApiClient.instance
+                                            .delete('/chat/sessions/${s.id}');
                                         if (historyCtx.mounted) {
                                           setHistoryState(() {
-                                            sessions?.removeWhere((item) => item.id == s.id);
+                                            sessions?.removeWhere(
+                                                (item) => item.id == s.id);
                                           });
                                         }
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
-                                              content: Text('Đã xóa phiên trò chuyện "${s.title}"'),
-                                              behavior: SnackBarBehavior.floating,
-                                              duration: const Duration(seconds: 2),
+                                              content: Text(
+                                                  'Đã xóa phiên trò chuyện "${s.title}"'),
+                                              behavior:
+                                                  SnackBarBehavior.floating,
+                                              duration:
+                                                  const Duration(seconds: 2),
                                             ),
                                           );
                                           if (s.id == _sessionId) {
-                                            if (historyCtx.mounted) Navigator.pop(historyCtx);
+                                            if (historyCtx.mounted)
+                                              Navigator.pop(historyCtx);
                                             _resetSession();
                                           }
                                         }
                                       } catch (e) {
                                         if (mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(context)
+                                              .showSnackBar(
                                             SnackBar(
-                                              content: Text('Không thể xóa: $e'),
-                                              backgroundColor: Colors.red.shade700,
-                                              behavior: SnackBarBehavior.floating,
+                                              content:
+                                                  Text('Không thể xóa: $e'),
+                                              backgroundColor:
+                                                  Colors.red.shade700,
+                                              behavior:
+                                                  SnackBarBehavior.floating,
                                             ),
                                           );
                                         }
@@ -569,7 +631,9 @@ class ChatScreenState extends State<ChatScreen> {
       await Future.delayed(const Duration(milliseconds: 300));
       if (!mounted) return;
 
-      final mockWords = 'Cảm ơn bạn đã chia sẻ! Enigma khuyên bạn nên kết hợp kỹ thuật hít thở Box Breathing 4-4-4-4 và ngâm chân nước ấm sau ca làm để phục hồi năng lượng nhé.'.split(' ');
+      final mockWords =
+          'Cảm ơn bạn đã chia sẻ! Enigma khuyên bạn nên kết hợp kỹ thuật hít thở Box Breathing 4-4-4-4 và ngâm chân nước ấm sau ca làm để phục hồi năng lượng nhé.'
+              .split(' ');
 
       final mockAi = ChatMessage(
         id: 'mock_${DateTime.now().millisecondsSinceEpoch}',
@@ -613,7 +677,8 @@ class ChatScreenState extends State<ChatScreen> {
           _sessionTitle == 'Tư vấn Thích nghi & Tâm lý' ||
           _sessionTitle == 'Tư vấn Enigma AI') {
         setState(() {
-          _sessionTitle = text.length > 35 ? '${text.substring(0, 35)}...' : text;
+          _sessionTitle =
+              text.length > 35 ? '${text.substring(0, 35)}...' : text;
         });
       }
 
@@ -621,7 +686,8 @@ class ChatScreenState extends State<ChatScreen> {
       final rawContent = (aiData['content'] as String? ?? '').trim();
       final fullContent = stripMarkdown(rawContent);
       final rawSources = res.data['rag_sources'] as List?;
-      final riskAssessment = res.data['risk_assessment'] as Map<String, dynamic>?;
+      final riskAssessment =
+          res.data['risk_assessment'] as Map<String, dynamic>?;
 
       List<RAGSource>? sources;
       if (rawSources != null && rawSources.isNotEmpty) {
@@ -637,7 +703,8 @@ class ChatScreenState extends State<ChatScreen> {
 
       // Tạo bubble rỗng và stream từng từ (Typewriter Animation) tức thì
       final aiMsg = ChatMessage(
-        id: aiData['id']?.toString() ?? 'ai_${DateTime.now().millisecondsSinceEpoch}',
+        id: aiData['id']?.toString() ??
+            'ai_${DateTime.now().millisecondsSinceEpoch}',
         content: '',
         isUser: false,
         timestamp: DateTime.now(),
@@ -705,7 +772,9 @@ class ChatScreenState extends State<ChatScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(feedback == 1 ? 'Cảm ơn bạn đã khen ngợi!' : 'Cảm ơn bạn đã góp ý để Enigma hoàn thiện hơn!'),
+            content: Text(feedback == 1
+                ? 'Cảm ơn bạn đã khen ngợi!'
+                : 'Cảm ơn bạn đã góp ý để Enigma hoàn thiện hơn!'),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
           ),
@@ -741,9 +810,12 @@ class ChatScreenState extends State<ChatScreen> {
             children: [
               const Row(
                 children: [
-                  Icon(Icons.psychology_rounded, color: AppTheme.primaryLight, size: 22),
+                  Icon(Icons.psychology_rounded,
+                      color: AppTheme.primaryLight, size: 22),
                   SizedBox(width: 8),
-                  Text('Trợ Lý Thích Nghi AI', style: TextStyle(fontSize: 16.5, fontWeight: FontWeight.w800)),
+                  Text('Trợ Lý Của Bạn',
+                      style: TextStyle(
+                          fontSize: 16.5, fontWeight: FontWeight.w800)),
                 ],
               ),
               if (_sessionTitle != null) ...[
@@ -789,20 +861,26 @@ class ChatScreenState extends State<ChatScreen> {
             // Emergency / High Risk Banner
             if (_riskWarning != null) ...[
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                 color: Colors.redAccent.withOpacity(0.15),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded, color: Colors.redAccent, size: 22),
+                    const Icon(Icons.warning_amber_rounded,
+                        color: Colors.redAccent, size: 22),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Text(
                         _riskWarning!,
-                        style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                            color: Colors.redAccent,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600),
                       ),
                     ),
                     IconButton(
-                      icon: const Icon(Icons.close, size: 16, color: Colors.redAccent),
+                      icon: const Icon(Icons.close,
+                          size: 16, color: Colors.redAccent),
                       onPressed: () => setState(() => _riskWarning = null),
                     ),
                   ],
@@ -815,13 +893,17 @@ class ChatScreenState extends State<ChatScreen> {
               key: _quickTopicsKey,
               child: SingleChildScrollView(
                 scrollDirection: Axis.horizontal,
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                 child: Row(
                   children: _quickTopics.map((topic) {
                     return Padding(
                       padding: const EdgeInsets.only(right: 6.0),
                       child: ActionChip(
-                        label: Text(topic, style: TextStyle(fontSize: 12, color: AppTheme.onSurface(context))),
+                        label: Text(topic,
+                            style: TextStyle(
+                                fontSize: 12,
+                                color: AppTheme.onSurface(context))),
                         onPressed: () => _sendMessage(topic),
                         backgroundColor: AppTheme.surfaceAltColor(context),
                         side: BorderSide(color: AppTheme.borderColor(context)),
@@ -853,42 +935,46 @@ class ChatScreenState extends State<ChatScreen> {
             else
               Expanded(
                 child: ListView.builder(
-                controller: _scrollController,
-                keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                itemCount: _messages.length + (_isTyping ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == _messages.length) {
-                    return ChatBubble(
-                      message: ChatMessage(
-                        id: 'typing',
-                        content: '',
-                        isUser: false,
-                        timestamp: DateTime.now(),
-                        isLoading: true,
-                      ),
-                    ).animate().fade();
-                  }
+                  controller: _scrollController,
+                  keyboardDismissBehavior:
+                      ScrollViewKeyboardDismissBehavior.onDrag,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  itemCount: _messages.length + (_isTyping ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _messages.length) {
+                      return ChatBubble(
+                        message: ChatMessage(
+                          id: 'typing',
+                          content: '',
+                          isUser: false,
+                          timestamp: DateTime.now(),
+                          isLoading: true,
+                        ),
+                      ).animate().fade();
+                    }
 
-                  final msg = _messages[index];
-                  return ChatBubble(
-                    key: ValueKey(msg.id),
-                    message: msg,
-                    onSuggestionTap: _sendMessage,
-                    onFeedbackTap: (fb) => _handleFeedback(msg, fb),
-                  );
-                },
+                    final msg = _messages[index];
+                    return ChatBubble(
+                      key: ValueKey(msg.id),
+                      message: msg,
+                      onSuggestionTap: _sendMessage,
+                      onFeedbackTap: (fb) => _handleFeedback(msg, fb),
+                    );
+                  },
+                ),
               ),
-            ),
 
             // Input Area
             KeyedSubtree(
               key: _inputAreaKey,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 decoration: BoxDecoration(
                   color: AppTheme.surfaceColor(context),
-                  border: Border(top: BorderSide(color: AppTheme.borderColor(context))),
+                  border: Border(
+                      top: BorderSide(color: AppTheme.borderColor(context))),
                   boxShadow: [
                     BoxShadow(
                       color: Colors.black.withValues(alpha: 0.06),
@@ -904,23 +990,30 @@ class ChatScreenState extends State<ChatScreen> {
                         child: TextField(
                           controller: _controller,
                           focusNode: _focusNode,
-                          style: TextStyle(color: AppTheme.onSurface(context), fontSize: 14),
+                          style: TextStyle(
+                              color: AppTheme.onSurface(context), fontSize: 14),
                           decoration: InputDecoration(
                             hintText: 'Nhập câu hỏi hoặc tâm sự khó khăn...',
-                            hintStyle: TextStyle(color: AppTheme.onSurfaceMuted(context), fontSize: 13),
+                            hintStyle: TextStyle(
+                                color: AppTheme.onSurfaceMuted(context),
+                                fontSize: 13),
                             filled: true,
                             fillColor: AppTheme.surfaceAltColor(context),
                             border: OutlineInputBorder(
                               borderRadius: BorderRadius.circular(24),
                               borderSide: BorderSide.none,
                             ),
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 12),
+                            contentPadding: const EdgeInsets.symmetric(
+                                horizontal: 18, vertical: 12),
                             suffixIcon: isKeyboardOpen
                                 ? IconButton(
-                                    icon: const Icon(Icons.keyboard_hide_rounded, size: 20),
+                                    icon: const Icon(
+                                        Icons.keyboard_hide_rounded,
+                                        size: 20),
                                     tooltip: 'Ẩn bàn phím',
                                     color: AppTheme.onSurfaceMuted(context),
-                                    onPressed: () => FocusScope.of(context).unfocus(),
+                                    onPressed: () =>
+                                        FocusScope.of(context).unfocus(),
                                   )
                                 : null,
                           ),
@@ -934,7 +1027,8 @@ class ChatScreenState extends State<ChatScreen> {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                          icon: const Icon(Icons.send_rounded,
+                              color: Colors.white, size: 20),
                           onPressed: () => _sendMessage(_controller.text),
                         ),
                       ),
