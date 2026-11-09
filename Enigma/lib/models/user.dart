@@ -14,6 +14,8 @@ class User {
   final String? companyName;
   final bool? companyIsPending;
   final bool? isPending;
+  final String? phone;
+  final bool? allowCrisisContact;
 
   User({
     required this.id,
@@ -31,6 +33,8 @@ class User {
     this.companyName,
     this.companyIsPending,
     this.isPending,
+    this.phone,
+    this.allowCrisisContact,
   });
 
   bool get isGuest => id == 'guest';
@@ -71,6 +75,8 @@ class User {
       companyName: rawComp,
       companyIsPending: json['company_is_pending'] as bool?,
       isPending: json['is_pending'] as bool?,
+      phone: json['phone']?.toString(),
+      allowCrisisContact: json['allow_crisis_contact'] as bool? ?? false,
     );
   }
 
@@ -84,6 +90,8 @@ class User {
       'university': university,
       'major': major,
       'avatarUrl': avatarUrl,
+      'phone': phone,
+      'allow_crisis_contact': allowCrisisContact,
       'university_id': universityId,
       'university_name': universityName,
       'university_is_pending': universityIsPending,
@@ -110,6 +118,8 @@ class User {
     String? companyName,
     bool? companyIsPending,
     bool? isPending,
+    String? phone,
+    bool? allowCrisisContact,
   }) {
     return User(
       id: id ?? this.id,
@@ -127,6 +137,8 @@ class User {
       companyName: companyName ?? this.companyName,
       companyIsPending: companyIsPending ?? this.companyIsPending,
       isPending: isPending ?? this.isPending,
+      phone: phone ?? this.phone,
+      allowCrisisContact: allowCrisisContact ?? this.allowCrisisContact,
     );
   }
 }

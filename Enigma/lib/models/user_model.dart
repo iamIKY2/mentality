@@ -16,6 +16,8 @@ class UserModel {
   final String? companyId;
   final bool? companyIsPending;
   final bool? isPending;
+  final String? phone;
+  final bool? allowCrisisContact;
 
   UserModel({
     required this.id,
@@ -35,6 +37,8 @@ class UserModel {
     this.companyId,
     this.companyIsPending,
     this.isPending,
+    this.phone,
+    this.allowCrisisContact,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -62,6 +66,8 @@ class UserModel {
       companyId: json['company_id']?.toString(),
       companyIsPending: json['company_is_pending'] as bool?,
       isPending: json['is_pending'] as bool?,
+      phone: json['phone']?.toString(),
+      allowCrisisContact: json['allow_crisis_contact'] as bool? ?? false,
     );
   }
 
@@ -75,6 +81,8 @@ class UserModel {
       'university': university,
       'major': major,
       'avatar_url': avatarUrl,
+      'phone': phone,
+      'allow_crisis_contact': allowCrisisContact,
       'is_active': isActive,
       'company_name': companyName,
       'current_phase': currentPhase,

@@ -20,6 +20,8 @@ CREATE TABLE users (
     university_id   UUID,
     university      VARCHAR(255),
     major           VARCHAR(255),
+    phone           VARCHAR(20),
+    allow_crisis_contact BOOLEAN NOT NULL DEFAULT FALSE,
     avatar_url      TEXT,
     fcm_token       TEXT,
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,

@@ -34,6 +34,8 @@ class User(Base):
     university_id = Column(UUID(as_uuid=True), ForeignKey("universities.id", ondelete="SET NULL"), nullable=True, index=True)
     university    = Column(String(255), nullable=True)
     major         = Column(String(255), nullable=True)
+    phone         = Column(String(20), nullable=True)
+    allow_crisis_contact = Column(Boolean, nullable=False, default=False)
     avatar_url    = Column(Text, nullable=True)
     fcm_token     = Column(Text, nullable=True)
     is_active     = Column(Boolean, nullable=False, default=True)

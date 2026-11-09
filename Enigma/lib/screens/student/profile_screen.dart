@@ -45,26 +45,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
       text: user.companyName ?? WorkplaceService.instance.profile?.companyName ?? '',
     );
     final majorCtrl = TextEditingController(text: user.major ?? '');
+    final phoneCtrl = TextEditingController(text: user.phone ?? '');
+    bool allowCrisisContact = user.allowCrisisContact ?? false;
     final formKey = GlobalKey<FormState>();
+
+    String? validatePhone(String? v) {
+      if (v == null || v.trim().isEmpty) {
+        return null; // Optional
+      }
+      final clean = v.replaceAll(RegExp(r'[\s\-\.\(\)]'), '');
+      final vnPhoneRegex = RegExp(r'^(0\d{9}|\+84\d{9})$');
+      if (!vnPhoneRegex.hasMatch(clean)) {
+        return 'Số điện thoại không hợp lệ (cần 10 số bắt đầu bằng 0 hoặc +84)';
+      }
+      return null;
+    }
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (sheetCtx) => StatefulBuilder(
-        builder: (ctx, setModalState) => Container(
-          padding: EdgeInsets.only(
-            left: 24,
-            right: 24,
-            top: 24,
-            bottom: MediaQuery.of(sheetCtx).viewInsets.bottom + 28,
-          ),
-          decoration: BoxDecoration(
-            color: AppTheme.surfaceColor(context),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            border: Border.all(color: AppTheme.borderColor(context)),
-          ),
-          child: SingleChildScrollView(
+        builder: (ctx, setModalState) {
+          final bottomInset = MediaQuery.of(sheetCtx).viewInsets.bottom;
+          return Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(sheetCtx).size.height * 0.88,
+            ),
+            padding: EdgeInsets.only(
+              left: 24,
+              right: 24,
+              top: 20,
+              bottom: bottomInset + 24,
+            ),
+            decoration: BoxDecoration(
+              color: AppTheme.surfaceColor(context),
+              borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+              border: Border.all(color: AppTheme.borderColor(context)),
+            ),
+            child: SingleChildScrollView(
             child: Form(
               key: formKey,
               child: Column(
@@ -166,6 +185,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
                     ),
                   ),
+                  const SizedBox(height: 14),
+
+                  // Số điện thoại (không bắt buộc)
+                  TextFormField(
+                    controller: phoneCtrl,
+                    keyboardType: TextInputType.phone,
+                    decoration: InputDecoration(
+                      labelText: 'Số điện thoại (không bắt buộc)',
+                      helperText: 'Dùng để người phụ trách liên hệ khi bạn cần hỗ trợ.',
+                      prefixIcon: const Icon(Icons.phone_rounded),
+                      filled: true,
+                      fillColor: AppTheme.surfaceAltColor(context),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+                    ),
+                    validator: validatePhone,
+                    onChanged: (val) {
+                      if (val.trim().isEmpty && allowCrisisContact) {
+                        setModalState(() {
+                          allowCrisisContact = false;
+                        });
+                      } else {
+                        setModalState(() {});
+                      }
+                    },
+                  ),
+                  const SizedBox(height: 10),
+
+                  // Switch: Cho phép người phụ trách liên hệ khi tôi cần hỗ trợ
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppTheme.surfaceAltColor(context),
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: AppTheme.borderColor(context)),
+                    ),
+                    child: SwitchListTile(
+                      value: allowCrisisContact,
+                      onChanged: phoneCtrl.text.trim().isEmpty
+                          ? null
+                          : (val) {
+                              setModalState(() {
+                                allowCrisisContact = val;
+                              });
+                            },
+                      title: const Text(
+                        'Cho phép người phụ trách liên hệ khi tôi cần hỗ trợ',
+                        style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600),
+                      ),
+                      subtitle: phoneCtrl.text.trim().isEmpty
+                          ? const Text(
+                              'Vui lòng nhập số điện thoại để bật tính năng này.',
+                              style: TextStyle(fontSize: 11.5, color: Colors.orangeAccent),
+                            )
+                          : null,
+                      activeColor: AppTheme.primary,
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 4),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Icon(
+                          Icons.privacy_tip_outlined,
+                          size: 13,
+                          color: AppTheme.onSurfaceSecondary(context),
+                        ),
+                        const SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            'Chỉ người phụ trách (Admin) thấy số điện thoại khi có cảnh báo nguy cấp và bạn đang bật công tắc này.',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppTheme.onSurfaceSecondary(context),
+                              height: 1.35,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                   const SizedBox(height: 24),
 
                   // Action Buttons
@@ -188,12 +289,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             if (!formKey.currentState!.validate()) return;
                             Navigator.pop(sheetCtx);
 
+                            final rawPhone = phoneCtrl.text.trim();
+                            final phoneToSend = rawPhone.isEmpty ? '' : rawPhone;
+                            final consentToSend = rawPhone.isEmpty ? false : allowCrisisContact;
+
                             final success = await context.read<AuthState>().updateProfile(
                                   name: nameCtrl.text,
                                   studentId: studentIdCtrl.text,
                                   university: universityCtrl.text,
                                   company: companyCtrl.text,
                                   major: majorCtrl.text,
+                                  phone: phoneToSend,
+                                  allowCrisisContact: consentToSend,
                                 );
 
                             if (success) {
@@ -230,10 +337,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
+        );
+      },
+    ),
+  );
+}
 
   // ── Show Avatar Picker Sheet ────────────────────────────────────────────────
   void _showAvatarPickerSheet(BuildContext context, User user) {
@@ -949,6 +1057,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
               icon: Icons.business_outlined,
               label: 'Đơn vị thực tập',
               value: companyDisplayName,
+            ),
+            _buildDetailTile(
+              context,
+              icon: Icons.phone_outlined,
+              label: 'Số điện thoại hỗ trợ',
+              value: (user.phone != null && user.phone!.isNotEmpty)
+                  ? '${user.phone} (${(user.allowCrisisContact ?? false) ? "Cho phép liên hệ" : "Chưa bật liên hệ"})'
+                  : 'Chưa cập nhật',
             ),
 
             const SizedBox(height: 24),

@@ -2572,12 +2572,56 @@
         ? '<span class="badge badge-danger">NGHIÊM TRỌNG (EXPLICIT)</span>'
         : '<span class="badge badge-amber">CẦN CHÚ Ý (AMBIGUOUS)</span>';
 
+      const contacts = f.crisis_contacts || {};
+      const hasConsent = Boolean(f.allow_crisis_contact);
+      const phoneStr = f.phone ? String(f.phone).trim() : '';
+      const isValidVnPhone = /^\+84\d{9}$/.test(phoneStr);
+      const canCall = Boolean(hasConsent && isValidVnPhone);
+      const emailStr = f.email ? String(f.email).trim() : '';
+      const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailStr);
+      const canEmail = Boolean(hasConsent && isValidEmail);
+
+      let mailtoHref = '';
+      if (canEmail) {
+        const atIdx = emailStr.lastIndexOf('@');
+        if (atIdx > 0 && atIdx < emailStr.length - 1) {
+          const localPart = emailStr.slice(0, atIdx);
+          const domainPart = emailStr.slice(atIdx + 1);
+          mailtoHref = `mailto:${encodeURIComponent(localPart)}@${encodeURIComponent(domainPart)}`;
+        }
+      }
+
       return `
         <tr>
           <td><small class="text-subtle">${escapeHtml(f.created_at ? f.created_at.slice(0, 16).replace('T', ' ') : 'Vừa xong')}</small></td>
           <td>
             <strong>${escapeHtml(f.full_name || 'Sinh viên')}</strong><br>
-            <small class="text-subtle">MSSV: ${escapeHtml(f.student_id || 'Chưa có')} | ${escapeHtml(f.email || '')}</small>
+            <small class="text-subtle">MSSV: ${escapeHtml(f.student_id || 'Chưa có')}${canEmail ? ` | ${escapeHtml(emailStr)}` : ''}</small>
+            <div style="margin-top: 6px;">
+              ${canCall 
+                ? `<span class="badge badge-success" style="font-size: 11px;">📞 ${escapeHtml(phoneStr)}</span>`
+                : `<span class="badge badge-amber" style="font-size: 11px; white-space: normal; line-height: 1.3;">⚠️ ${escapeHtml(f.contact_note || (hasConsent ? (phoneStr ? 'Số điện thoại không đúng chuẩn (+84)' : 'Chưa cập nhật số điện thoại') : 'Chưa có đồng ý liên hệ trực tiếp'))}</span>`
+              }
+            </div>
+            <div style="margin-top: 6px; display: flex; gap: 6px; flex-wrap: wrap;">
+              ${canCall ? `<a href="tel:${escapeHtml(phoneStr)}" class="btn btn-sm btn-primary" style="text-decoration: none;">📞 Gọi</a>` : ''}
+              ${(canEmail && mailtoHref) ? `<a href="${escapeHtml(mailtoHref)}" class="btn btn-sm btn-secondary" style="text-decoration: none;">✉️ Gửi email</a>` : ''}
+            </div>
+            <details style="margin-top: 8px; font-size: 11.5px; background: rgba(255,255,255,0.04); padding: 8px 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08);">
+              <summary style="cursor: pointer; color: #38bdf8; font-weight: 600;">📋 Đầu mối hỗ trợ (Config) & Checklist</summary>
+              <div style="margin-top: 6px; line-height: 1.5;">
+                <div style="color: #94a3b8;"><strong>Đầu mối hỗ trợ:</strong></div>
+                <div>• Mentor/Người phụ trách: <strong>${escapeHtml(contacts.mentor || 'Chưa cấu hình')}</strong></div>
+                <div>• Tư vấn tâm lý trường: <strong>${escapeHtml(contacts.school_counseling || 'Chưa cấu hình')}</strong></div>
+                <div>• Trạm y tế công ty: <strong>${escapeHtml(contacts.company_clinic || 'Chưa cấu hình')}</strong></div>
+                <div>• Cấp cứu y tế: <strong>${escapeHtml(contacts.emergency || '115')}</strong></div>
+                <div style="margin-top: 6px; color: #94a3b8;"><strong>Quy trình xử lý nhanh:</strong></div>
+                <div>☑ 1. Đánh giá nguy cơ tức thì (an toàn bản thân).</div>
+                <div>☑ 2. Gọi điện/email trao đổi động viên trực tiếp.</div>
+                <div>☑ 3. Báo cáo Mentor / Phòng tư vấn trường phối hợp.</div>
+                <div>☑ 4. Cập nhật ghi chú bên cạnh và chọn 'Đã Liên Hệ'.</div>
+              </div>
+            </details>
           </td>
           <td>${tierBadge}</td>
           <td>${statusBadge}</td>

@@ -562,6 +562,8 @@ class AuthState extends ChangeNotifier {
     String? company,
     String? major,
     String? avatarUrl,
+    String? phone,
+    bool? allowCrisisContact,
   }) async {
     _isLoading = true;
     _error = null;
@@ -578,6 +580,8 @@ class AuthState extends ChangeNotifier {
           companyName: company,
           major: major,
           avatarUrl: avatarUrl ?? _user?.avatarUrl,
+          phone: phone,
+          allowCrisisContact: allowCrisisContact,
         );
         _isLoading = false;
         notifyListeners();
@@ -595,6 +599,12 @@ class AuthState extends ChangeNotifier {
       if (avatarUrl != null) {
         data['avatar_url'] = avatarUrl;
       }
+      if (phone != null) {
+        data['phone'] = phone;
+      }
+      if (allowCrisisContact != null) {
+        data['allow_crisis_contact'] = allowCrisisContact;
+      }
 
       // Optimistic UI update
       if (_user != null) {
@@ -606,6 +616,8 @@ class AuthState extends ChangeNotifier {
           companyName: company,
           major: major,
           avatarUrl: avatarUrl ?? _user?.avatarUrl,
+          phone: phone,
+          allowCrisisContact: allowCrisisContact,
         );
         await StorageUtil.saveCachedUser(_user!);
         notifyListeners();

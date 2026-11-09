@@ -12,6 +12,7 @@ from app.db.models.user import User
 from app.db.models.intern_profile import InternProfile
 from app.db.models.crisis_flag import CrisisFlag
 from app.api.routes.admin import get_authed_admin
+from app.core.config import settings
 
 router = APIRouter()
 
@@ -42,12 +43,25 @@ async def get_crisis_flags(
 
     out = []
     for flag, u, p in rows:
+        has_consent = bool(u.allow_crisis_contact)
+        if has_consent:
+            phone_val = u.phone if u.phone else None
+            email_val = u.email if u.email else None
+            contact_note = None
+        else:
+            phone_val = None
+            email_val = None
+            contact_note = "chưa có đồng ý liên hệ trực tiếp, hãy liên hệ qua mentor/nhà trường"
+
         out.append({
             "id": str(flag.id),
             "user_id": str(flag.user_id),
             "full_name": html.escape(u.full_name or ""),
             "student_id": html.escape(u.student_id or ""),
-            "email": html.escape(u.email or ""),
+            "email": email_val,
+            "phone": phone_val,
+            "contact_note": contact_note,
+            "allow_crisis_contact": has_consent,
             "company_name": html.escape(p.company_name or "") if p else None,
             "tier": str(flag.tier),
             "source": str(flag.source),
@@ -56,6 +70,12 @@ async def get_crisis_flags(
             "handled_by": str(flag.handled_by) if flag.handled_by else None,
             "handled_at": flag.handled_at.isoformat() if flag.handled_at else None,
             "created_at": flag.created_at.isoformat() if flag.created_at else None,
+            "crisis_contacts": {
+                "mentor": html.escape(settings.CRISIS_CONTACT_MENTOR or ""),
+                "school_counseling": html.escape(settings.CRISIS_CONTACT_SCHOOL_COUNSELING or ""),
+                "company_clinic": html.escape(settings.CRISIS_CONTACT_COMPANY_CLINIC or ""),
+                "emergency": html.escape(settings.CRISIS_CONTACT_EMERGENCY or "115"),
+            }
         })
     return out
 

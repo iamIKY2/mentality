@@ -47,6 +47,8 @@ class UserResponse(BaseModel):
     full_name:             str
     role:                  str
     student_id:            Optional[str] = None
+    phone:                 Optional[str] = None
+    allow_crisis_contact:  bool = False
     university_id:         Optional[UUID] = None
     university:            Optional[str] = None
     university_name:       Optional[str] = None
@@ -79,6 +81,8 @@ class ResetPasswordRequest(BaseModel):
 class UpdateProfileRequest(BaseModel):
     full_name:             Optional[str] = Field(None, min_length=2, max_length=255)
     student_id:            Optional[str] = Field(None, max_length=20)
+    phone:                 Optional[str] = None
+    allow_crisis_contact:  Optional[bool] = None
     university_id:         Optional[UUID] = None
     university:            Optional[str] = None
     company_id:            Optional[UUID] = None

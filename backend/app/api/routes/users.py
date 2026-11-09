@@ -20,7 +20,7 @@ from app.db.models.catalog import University, Company
 from app.db.models.intern_profile import InternProfile
 from app.services import user_service
 from app.core.security import verify_password, hash_password
-from app.core.text_utils import normalize_vietnamese_text
+from app.core.text_utils import normalize_vietnamese_text, normalize_vietnamese_phone
 
 router = APIRouter()
 
@@ -53,6 +53,8 @@ async def build_user_profile_response(db: AsyncSession, user: User) -> UserRespo
         full_name=u.full_name,
         role=u.role.value if hasattr(u.role, 'value') else str(u.role),
         student_id=u.student_id,
+        phone=u.phone,
+        allow_crisis_contact=bool(u.allow_crisis_contact),
         university_id=u.university_id,
         university=resolved_university_name,
         university_name=resolved_university_name,
@@ -459,6 +461,25 @@ async def update_my_profile(
         user.major = payload.major.strip() if payload.major.strip() else None
     if payload.avatar_url is not None:
         user.avatar_url = payload.avatar_url
+
+    if payload.phone is not None:
+        try:
+            norm_phone = normalize_vietnamese_phone(payload.phone)
+            user.phone = norm_phone
+            if norm_phone is None:
+                # empty value clears the phone and turns the switch off
+                user.allow_crisis_contact = False
+        except ValueError as val_err:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=str(val_err)
+            )
+
+    if payload.allow_crisis_contact is not None:
+        if not user.phone:
+            user.allow_crisis_contact = False
+        else:
+            user.allow_crisis_contact = bool(payload.allow_crisis_contact)
 
     try:
         await db.commit()
