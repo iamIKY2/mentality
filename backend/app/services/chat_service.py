@@ -1,9 +1,13 @@
+import logging
 from typing import List, Optional, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.models.chat import ChatSession, ChatMessage
 from app.services.advanced_rag_service import AdvancedRAGService
+from app.core.text_utils import strip_markdown
+
+logger = logging.getLogger(__name__)
 
 
 class ChatService:
@@ -77,6 +81,36 @@ class ChatService:
         return float(val) if val is not None else None
 
     @staticmethod
+    async def get_user_approved_company_name(db: AsyncSession, user_id) -> Optional[str]:
+        """
+        Lấy tên doanh nghiệp thực tập của sinh viên nếu intern_profiles.company_id hợp lệ
+        và doanh nghiệp có is_approved = true. Nếu chưa có hoặc chưa duyệt, trả về None.
+        Bọc trong savepoint (db.begin_nested()) với try/except; nếu lỗi thì log và trả về None.
+        """
+        if not db or not user_id:
+            return None
+        try:
+            from app.db.models.intern_profile import InternProfile
+            from app.db.models.catalog import Company
+
+            async with db.begin_nested():
+                stmt = (
+                    select(Company.name)
+                    .join(InternProfile, InternProfile.company_id == Company.id)
+                    .where(
+                        InternProfile.user_id == user_id,
+                        InternProfile.company_id.isnot(None),
+                        Company.is_approved == True,
+                    )
+                    .limit(1)
+                )
+                res = await db.execute(stmt)
+                return res.scalar_one_or_none()
+        except Exception as e:
+            logger.warning(f"[ChatService] Lỗi khi lấy tên công ty đã duyệt cho user {user_id}: {e}")
+            return None
+
+    @staticmethod
     async def send_user_message_and_get_rag_reply(
         db: AsyncSession,
         user_id,
@@ -102,7 +136,10 @@ class ChatService:
         # 2. Luôn đọc giờ ngủ thực tế từ DB của user trong 36h qua (bỏ qua giá trị client gửi)
         actual_sleep_hours = await ChatService.get_recent_sleep_hours(db, user_id)
 
-        # 3. Call Advanced RAG Engine Service (with Function Calling support)
+        # 3. Lấy tên doanh nghiệp đã duyệt của sinh viên từ server-side
+        company_name = await ChatService.get_user_approved_company_name(db, user_id)
+
+        # 4. Call Advanced RAG Engine Service (with Function Calling support)
         rag_res = await AdvancedRAGService.generate_advanced_rag_response(
             query=content,
             user_name=user_name,
@@ -112,14 +149,16 @@ class ChatService:
             recent_symptoms=recent_symptoms,
             user_id=str(user_id),
             db=db,
-            enable_function_calling=True
+            enable_function_calling=True,
+            company_name=company_name
         )
 
-        # 3. Save AI message with rag_sources metadata
+        # 5. Save AI message with sanitized plain prose and rag_sources metadata
+        clean_content = strip_markdown(rag_res["content"])
         ai_msg = ChatMessage(
             session_id=session_id,
             is_user=False,
-            content=rag_res["content"],
+            content=clean_content,
             rag_sources=rag_res["rag_sources"]
         )
         db.add(ai_msg)

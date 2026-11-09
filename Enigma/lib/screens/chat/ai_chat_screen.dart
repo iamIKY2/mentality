@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/text_sanitizer.dart';
 import '../../models/chat_model.dart';
 import '../../providers/chat_provider.dart';
 
@@ -265,7 +266,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              msg.content,
+              msg.isUser ? msg.content : stripMarkdown(msg.content),
               style: TextStyle(
                 fontSize: 14,
                 height: 1.5,

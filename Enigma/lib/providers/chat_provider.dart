@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/constants/api_constants.dart';
 import '../core/network/api_client.dart';
+import '../core/utils/text_sanitizer.dart';
 import '../models/chat_model.dart';
 import '../models/journal_model.dart';
 
@@ -22,7 +23,7 @@ class ChatProvider extends ChangeNotifier {
     'Chân tôi rất đau khi mang giày ESD và đứng 12 tiếng',
     'Tôi cảm thấy lo âu vì làm việc trái ngành',
     'Tôi bất đồng về giờ giấc với bạn cùng phòng KTX',
-    'Quy tắc 5S tại LG Display yêu cầu những gì?',
+    'Quy tắc 5S tại nơi làm việc yêu cầu những gì?',
   ];
 
   void dismissAlert() {
@@ -85,7 +86,8 @@ class ChatProvider extends ChangeNotifier {
         );
 
         if (res.statusCode == 200) {
-          final aiData = res.data['ai_message'];
+          final aiData = Map<String, dynamic>.from(res.data['ai_message'] as Map);
+          aiData['content'] = stripMarkdown(aiData['content']?.toString() ?? '');
           final aiMsg = ChatMessageModel.fromJson(aiData);
           _messages.add(aiMsg);
 
@@ -118,7 +120,7 @@ class ChatProvider extends ChangeNotifier {
     List<dynamic> sources = [];
 
     if (lower.contains('chân') || lower.contains('esd') || lower.contains('đứng')) {
-      reply = 'Việc đau nhức bàn chân khi mang giày ESD và đứng ca dài là tình trạng rất phổ biến ở các bạn thực tập sinh mới tại LG Display. Theo cẩm nang cựu sinh viên:\n\n1. Bạn nên trang bị miếng lót giày silicon có đệm vòm chân.\n2. Tối nay hãy ngâm chân nước ấm pha muối gừng 15 phút.\n3. Khi ngủ, nhớ kê gối cao dưới bắp chân để máu hồi lưu tốt hơn.';
+      reply = 'Việc đau nhức bàn chân khi mang giày ESD và đứng ca dài là tình trạng rất phổ biến ở các bạn thực tập sinh mới tại nhà máy. Theo cẩm nang cựu sinh viên:\n\n1. Bạn nên trang bị miếng lót giày silicon có đệm vòm chân.\n2. Tối nay hãy ngâm chân nước ấm pha muối gừng 15 phút.\n3. Khi ngủ, nhớ kê gối cao dưới bắp chân để máu hồi lưu tốt hơn.';
       sources = ['Cẩm nang [h6-esd-shoes-care]: Giảm đau chân khi mang giày bảo hộ ESD'];
     } else if (lower.contains('ngủ') || lower.contains('ca đêm') || lower.contains('mệt')) {
       reply = 'Khi chuyển từ ca ngày sang ca đêm, đồng hồ sinh học bị xáo trộn mạnh. Bạn hãy áp dụng ngay:\n\n1. Treo rèm chắn sáng và đeo bịt mắt khi ngủ ban ngày.\n2. Cắt hoàn toàn cà phê sau 03:00 sáng.\n3. Nếu khó ngủ, hãy thử bài tập hít thở Box Breathing 4-4-4-4.';
@@ -137,7 +139,7 @@ class ChatProvider extends ChangeNotifier {
       ChatMessageModel(
         id: DateTime.now().millisecondsSinceEpoch.toString(),
         isUser: false,
-        content: reply,
+        content: stripMarkdown(reply),
         ragSources: sources,
         createdAt: DateTime.now(),
       ),

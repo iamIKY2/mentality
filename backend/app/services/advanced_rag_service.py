@@ -8,6 +8,7 @@ from sqlalchemy import select, desc
 from uuid import UUID
 
 from app.core.config import settings
+from app.core.text_utils import strip_markdown
 from app.services.vector_store_service import VectorStoreService
 from app.services.ai_agent_service import AIAgentService, RiskAssessmentResult
 from app.services.ai_guardrails import (
@@ -84,7 +85,7 @@ class AdvancedRAGService:
             (["stress", "thở", "căng thẳng", "áp lực", "lo lắng", "sợ", "hoảng"], "kỹ thuật hít thở Box Breathing 4-4-4-4 giảm căng thẳng tức thì"),
             (["vai gáy", "cổ", "mỏi vai", "đau lưng", "giãn cơ", "đứng lâu"], "chăm sóc thể chất và bài tập giãn cơ cổ vai gáy ca đứng"),
             (["phòng", "ktx", "trọ", "bạn cùng phòng", "ở ghép", "tiếng ồn"], "kỹ năng xử lý bất đồng bạn cùng phòng ký túc xá và đổi phòng trọ"),
-            (["5s", "an toàn", "quy tắc", "bảo hộ", "nội quy", "quần áo"], "quy tắc 5S và an toàn lao động tại nhà máy LG Display"),
+            (["5s", "an toàn", "quy tắc", "bảo hộ", "nội quy", "quần áo"], "quy tắc 5S và an toàn lao động tại nhà máy"),
             (["lương", "phụ cấp", "hợp đồng", "nghỉ phép", "đổi ca", "quyền lợi"], "cẩm nang tìm hiểu hợp đồng, phụ cấp và an toàn lao động thực tập sinh"),
             (["phq", "phq4", "phq-4", "sàng lọc", "tâm thần", "trầm cảm", "lo âu", "gad", "gad-7"], "quy trình sàng lọc sức khỏe tâm thần chuẩn y khoa PHQ-4 và phân tầng can thiệp"),
         ]
@@ -209,7 +210,8 @@ class AdvancedRAGService:
         top_k: int = 3,
         user_id: Optional[str] = None,
         db=None,
-        enable_function_calling: bool = False
+        enable_function_calling: bool = False,
+        company_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """Điều phối toàn bộ quy trình RAG tuân thủ triệt để Guardrails."""
 
@@ -384,25 +386,57 @@ class AdvancedRAGService:
 
         # ─── BƯỚC 3: XÂY DỰNG SYSTEM PROMPT VỚI SAFETY POLICY ──────────────────
         safety_block = safety_policy_block()
+        company_phrase = f"tại {company_name}" if company_name else "thực tập doanh nghiệp"
+        role_phrase = f"Trợ lý Đồng hành Tâm lý & Sức khỏe Thực tập {company_phrase}"
+
+        format_rule = (
+            "QUY TẮC ĐỊNH DẠNG BẮT BUỘC:\n"
+            "- Viết văn xuôi tự nhiên (plain prose), rõ ràng, mạch lạc, dễ đọc.\n"
+            "- TUYỆT ĐỐI KHÔNG dùng chữ in đậm (**text** hoặc __text__).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng chữ in nghiêng (*text* hoặc _text_).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng tiêu đề markdown (#, ##, ###).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng bảng markdown (|...|).\n"
+            "- Nếu cần liệt kê các bước hoặc ý, CHỈ dùng dấu gạch ngang '- ' ở đầu dòng.\n"
+            "- Giữ nguyên các định danh mã/biến số (ví dụ shift_day, user_id) và phép tính số học (ví dụ 2*3)."
+        )
+
+        student_company_text = company_name if company_name else "chưa rõ"
+        citation_rule = (
+            f"QUY TẮC TRÍCH DẪN DOANH NGHIỆP:\n"
+            f"- Doanh nghiệp của sinh viên: {student_company_text}\n"
+            f"- Quy định hoặc nội quy đặc thù của một doanh nghiệp cụ thể CHỈ được phép trích dẫn và áp dụng nếu đoạn trích cẩm nang có nêu đích danh tên doanh nghiệp đó VÀ đó đúng là doanh nghiệp của sinh viên (doanh nghiệp đã xác định và trùng khớp).\n"
+            f"- Nếu doanh nghiệp của sinh viên là 'chưa rõ', hãy xem mọi tên doanh nghiệp xuất hiện trong đoạn trích cẩm nang chỉ là ví dụ tham khảo từ một nơi làm việc khác: phải nêu rõ quy định tại nơi làm việc thực tế của sinh viên có thể khác biệt và nhắc sinh viên chủ động hỏi Anh/Chị Mentor hoặc Quản lý ca (Leader).\n"
+            f"- Nếu đoạn trích cẩm nang không nêu đích danh doanh nghiệp nào, hãy đưa ra hướng dẫn quy chuẩn chung và nhắc sinh viên trao đổi với Mentor hoặc Quản lý ca (Leader)."
+        )
 
         if intent == INTENT_GREETING:
-            system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý & Sức khỏe Thực tập tại LG Display.
-Nhiệm vụ: Chào hỏi bạn {user_name} một cách ấm áp, thân thiện (dùng emoji sinh động), giới thiệu ngắn gọn khả năng hỗ trợ (giải đáp ca kíp, đau mỏi ca đứng, cẩm nang 5S, bài tập thư giãn) và hỏi thăm tình hình hôm nay của bạn ấy.
+            system_prompt = f"""Bạn là Enigma AI — {role_phrase}.
+Nhiệm vụ: Chào hỏi bạn {user_name} một cách ấm áp, thân thiện (dùng emoji sinh động), giới thiệu ngắn gọn khả năng hỗ trợ (giải đáp ca kíp, đau mỏi ca đứng, quy tắc 5S, bài tập thư giãn) và hỏi thăm tình hình hôm nay của bạn ấy.
+
+{citation_rule}
+
+{format_rule}
 
 {safety_block}"""
         elif intent == INTENT_CLOSING:
-            system_prompt = f"""Bạn là Enigma AI — Trợ lý Thực tập LG Display.
+            system_prompt = f"""Bạn là Enigma AI — Trợ lý Thực tập{' ' + company_phrase if company_name else ' Doanh nghiệp'}.
 Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca làm việc an toàn, nhiều năng lượng và nhắc bạn luôn có Enigma bên cạnh khi cần hỗ trợ.
+
+{citation_rule}
+
+{format_rule}
 
 {safety_block}"""
         else:
             sleep_info = f"{sleep_hours}h" if sleep_hours is not None else "Chưa có dữ liệu (chưa rõ)"
             if sleep_hours is None:
-                sleep_instruction = f"• DỮ LIỆU GIẤC NGỦ: Hiện tại hệ thống CHƯA CÓ dữ liệu giấc ngủ ca gần nhất của bạn {user_name} (chưa rõ). Tuyệt đối KHÔNG tự giả định bạn ấy đã ngủ đủ 7 tiếng. Nếu sinh viên nhắc đến mệt mỏi, uể oải, ca kíp hay sức khỏe, hãy ân cần hỏi thăm xem ca vừa rồi bạn ấy ngủ được khoảng mấy tiếng."
+                sleep_instruction = f"- DỮ LIỆU GIẤC NGỦ: Hiện tại hệ thống CHƯA CÓ dữ liệu giấc ngủ ca gần nhất của bạn {user_name} (chưa rõ). Tuyệt đối KHÔNG tự giả định bạn ấy đã ngủ đủ 7 tiếng. Nếu sinh viên nhắc đến mệt mỏi, uể oải, ca kíp hay sức khỏe, hãy ân cần hỏi thăm xem ca vừa rồi bạn ấy ngủ được khoảng mấy tiếng."
             else:
-                sleep_instruction = f"• DỮ LIỆU GIẤC NGỦ: Ca gần nhất bạn {user_name} ngủ {sleep_hours}h. Hãy cân nhắc thông tin này khi tư vấn sức khỏe và phục hồi năng lượng."
+                sleep_instruction = f"- DỮ LIỆU GIẤC NGỦ: Ca gần nhất bạn {user_name} ngủ {sleep_hours}h. Hãy cân nhắc thông tin này khi tư vấn sức khỏe và phục hồi năng lượng."
 
-            system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý, Sức khỏe & Thích nghi Thực tập Doanh nghiệp tại LG Display.
+            company_info = f"- Doanh nghiệp của sinh viên: {student_company_text}"
+
+            system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý, Sức khỏe & Thích nghi Thực tập Doanh nghiệp{f' tại {company_name}' if company_name else ''}.
 
 🎯 NGUYÊN TẮC PHẢN HỒI:
 1. Thấu cảm & Trả lời TRỰC TIẾP, ĐÚNG TRỌNG TÂM câu hỏi của bạn {user_name}.
@@ -411,10 +445,15 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
 4. Xưng hô thân thiện "mình - bạn" hoặc "Enigma - {user_name}".
 {sleep_instruction}
 
+{citation_rule}
+
+{format_rule}
+
 {safety_block}
 
 👤 THÔNG TIN SINH VIÊN:
 - Tên: {user_name} | Chặng: {intern_phase} | Stress: {stress_level}/5 | Ngủ: {sleep_info} | Triệu chứng: {', '.join(recent_symptoms) if recent_symptoms else 'Bình thường'}
+{company_info}
 
 📚 CẨM NANG LIÊN QUAN (RAG CONTEXT):
 {context_str}
@@ -488,7 +527,7 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
                 note_text=query,
                 physical_symptoms=recent_symptoms
             )
-            ai_reply = AdvancedRAGService._generate_dynamic_fallback(query, intent, rag_sources, user_name, risk_result)
+            ai_reply = AdvancedRAGService._generate_dynamic_fallback(query, intent, rag_sources, user_name, risk_result, company_name=company_name)
 
         # ─── BƯỚC 5: OUTPUT CHECK (KIỂM SOÁT ĐƠN THUỐC, CHẨN ĐOÁN & TRÍCH DẪN) ─
         # Kiểm tra và làm sạch trích dẫn giả mạo (fake citations)
@@ -496,9 +535,10 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
         validated_reply = validate_citations(ai_reply, valid_indices)
 
         sanitized_reply, violation = check_output(validated_reply)
+        clean_final_content = strip_markdown(sanitized_reply)
 
         return {
-            "content": sanitized_reply,
+            "content": clean_final_content,
             "rag_sources": rag_sources,
             "crag_status": crag_status,
             "expanded_queries": expanded_queries,
@@ -523,6 +563,7 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
         top_k: int = 3,
         user_id: Optional[str] = None,
         db: Optional[Any] = None,
+        company_name: Optional[str] = None,
     ):
         """
         Stream câu trả lời AI theo Server-Sent Events (SSE).
@@ -676,28 +717,66 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, gửi lời chúc bạn có một ca 
 
         context_str = "\n\n".join(context_texts) if context_texts else f"{NO_INFO_PREFIX}"
         safety_block = safety_policy_block()
+        company_phrase = f"tại {company_name}" if company_name else "thực tập doanh nghiệp"
+        role_phrase = f"Trợ lý Đồng hành Tâm lý & Sức khỏe Thực tập {company_phrase}"
+
+        format_rule = (
+            "QUY TẮC ĐỊNH DẠNG BẮT BUỘC:\n"
+            "- Viết văn xuôi tự nhiên (plain prose), rõ ràng, mạch lạc, dễ đọc.\n"
+            "- TUYỆT ĐỐI KHÔNG dùng chữ in đậm (**text** hoặc __text__).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng chữ in nghiêng (*text* hoặc _text_).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng tiêu đề markdown (#, ##, ###).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng bảng markdown (|...|).\n"
+            "- Nếu cần liệt kê các bước hoặc ý, CHỈ dùng dấu gạch ngang '- ' ở đầu dòng.\n"
+            "- Giữ nguyên các định danh mã/biến số (ví dụ shift_day, user_id) và phép tính số học (ví dụ 2*3)."
+        )
+
+        student_company_text = company_name if company_name else "chưa rõ"
+        citation_rule = (
+            f"QUY TẮC TRÍCH DẪN DOANH NGHIỆP:\n"
+            f"- Doanh nghiệp của sinh viên: {student_company_text}\n"
+            f"- Quy định hoặc nội quy đặc thù của một doanh nghiệp cụ thể CHỈ được phép trích dẫn và áp dụng nếu đoạn trích cẩm nang có nêu đích danh tên doanh nghiệp đó VÀ đó đúng là doanh nghiệp của sinh viên (doanh nghiệp đã xác định và trùng khớp).\n"
+            f"- Nếu doanh nghiệp của sinh viên là 'chưa rõ', hãy xem mọi tên doanh nghiệp xuất hiện trong đoạn trích cẩm nang chỉ là ví dụ tham khảo từ một nơi làm việc khác: phải nêu rõ quy định tại nơi làm việc thực tế của sinh viên có thể khác biệt và nhắc sinh viên chủ động hỏi Anh/Chị Mentor hoặc Quản lý ca (Leader).\n"
+            f"- Nếu đoạn trích cẩm nang không nêu đích danh doanh nghiệp nào, hãy đưa ra hướng dẫn quy chuẩn chung và nhắc sinh viên trao đổi với Mentor hoặc Quản lý ca (Leader)."
+        )
 
         if intent == INTENT_GREETING:
-            system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý & Sức khỏe Thực tập tại LG Display.
+            system_prompt = f"""Bạn là Enigma AI — {role_phrase}.
 Nhiệm vụ: Chào hỏi bạn {user_name} ấm áp, giới thiệu hỗ trợ.
+
+{citation_rule}
+
+{format_rule}
+
 {safety_block}"""
         elif intent == INTENT_CLOSING:
-            system_prompt = f"""Bạn là Enigma AI — Trợ lý Thực tập LG Display.
+            system_prompt = f"""Bạn là Enigma AI — Trợ lý Thực tập{' ' + company_phrase if company_name else ' Doanh nghiệp'}.
 Nhiệm vụ: Cảm ơn bạn {user_name}, chúc ca làm an toàn.
+
+{citation_rule}
+
+{format_rule}
+
 {safety_block}"""
         else:
             sleep_info = f"{sleep_hours}h" if sleep_hours is not None else "Chưa có dữ liệu (chưa rõ)"
-            system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý, Sức khỏe & Thích nghi Thực tập Doanh nghiệp tại LG Display.
+            company_info = f"- Doanh nghiệp của sinh viên: {student_company_text}"
+            system_prompt = f"""Bạn là Enigma AI — Trợ lý Đồng hành Tâm lý, Sức khỏe & Thích nghi Thực tập Doanh nghiệp{f' tại {company_name}' if company_name else ''}.
 
 🎯 NGUYÊN TẮC:
 1. Thấu cảm & Trả lời trực tiếp đúng trọng tâm câu hỏi của {user_name}.
 2. Nếu có cẩm nang, trích dẫn rõ [Nguồn X: Tên bài viết].
 3. Đưa ra 2-3 lời khuyên hành động thực tế.
 
+{citation_rule}
+
+{format_rule}
+
 {safety_block}
 
 👤 THÔNG TIN SINH VIÊN:
 - Tên: {user_name} | Chặng: {intern_phase} | Stress: {stress_level}/5 | Ngủ: {sleep_info}
+{company_info}
 
 📚 CẨM NANG LIÊN QUAN:
 {context_str}
@@ -804,7 +883,7 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, chúc ca làm an toàn.
                 note_text=query,
                 physical_symptoms=recent_symptoms
             )
-            fallback = AdvancedRAGService._generate_dynamic_fallback(query, intent, rag_sources, user_name, risk_result)
+            fallback = AdvancedRAGService._generate_dynamic_fallback(query, intent, rag_sources, user_name, risk_result, company_name=company_name)
             sanitized_fallback, _ = check_output(fallback)
             full_text = sanitized_fallback
             words = sanitized_fallback.split(" ")
@@ -815,7 +894,7 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, chúc ca làm an toàn.
                 await asyncio.sleep(0.02)
 
         valid_indices = list(range(1, len(rag_sources) + 1))
-        final_validated_content = validate_citations(full_text.strip(), valid_indices)
+        final_validated_content = strip_markdown(validate_citations(full_text.strip(), valid_indices))
 
         yield {
             "type": "done",
@@ -828,14 +907,17 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, chúc ca làm an toàn.
         intent: str,
         rag_sources: List[Dict[str, Any]],
         user_name: str,
-        risk_result: RiskAssessmentResult
+        risk_result: RiskAssessmentResult,
+        company_name: Optional[str] = None
     ) -> str:
-        """Sinh câu trả lời thông minh an toàn khi ngoại tuyến."""
+        """Sinh câu trả lời thông minh an toàn khi ngoại tuyến (plain prose, không markdown)."""
         clean_q = query.lower().strip()
+        comp_str = f"tại {company_name}" if company_name else "tại doanh nghiệp thực tập"
 
         if intent == INTENT_GREETING:
+            greeting_comp = f"tại {company_name}" if company_name else "Thực tập Doanh nghiệp"
             return (
-                f"Chào {user_name}! 🤖 Mình là Enigma AI — Trợ lý Đồng hành Tâm lý & Sức khỏe Thực tập tại LG Display.\n\n"
+                f"Chào {user_name}! 🤖 Mình là Enigma AI — Trợ lý Đồng hành Tâm lý & Sức khỏe {greeting_comp}.\n\n"
                 f"Mình luôn sẵn sàng giải đáp thắc mắc về nhịp ca kíp, an toàn nhà máy 5S, kinh nghiệm ở KTX và hướng dẫn các bài tập phục hồi thể chất sau ca làm.\n\n"
                 f"Hôm nay bạn cảm thấy thế nào? Hãy chia sẻ cùng mình nhé! ✨"
             )
@@ -846,31 +928,31 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, chúc ca làm an toàn.
         if any(w in clean_q for w in ["đau chân", "giày", "esd", "mỏi chân", "gót chân"]):
             return (
                 f"Chào {user_name}! Đau chân khi mang giày bảo hộ ESD đứng máy 8-12 tiếng là vấn đề rất phổ biến ở giai đoạn đầu.\n\n"
-                f"💡 **Giải pháp phục hồi nhanh:**\n"
-                f"1. **Miếng lót silicon y tế**: Sử dụng thêm lót giày có đệm gót dày để phân tán trọng lực.\n"
-                f"2. **Ngâm chân nước ấm 15 phút**: Sau ca về phòng, ngâm chân nước ấm giúp giãn mao mạch và giảm nhức mỏi.\n"
-                f"3. **Kê cao chân khi ngủ**: Đặt gối dưới bắp chân giúp máu lưu thông về tim, hạn chế sưng phù.\n"
-                f"4. **Vận động tại chỗ**: Tranh thủ các quãng nghỉ 5 phút xoay khớp cổ chân và nhón gót."
+                f"Giải pháp phục hồi nhanh:\n"
+                f"- Miếng lót silicon y tế: Sử dụng thêm lót giày có đệm gót dày để phân tán trọng lực.\n"
+                f"- Ngâm chân nước ấm 15 phút: Sau ca về phòng, ngâm chân nước ấm giúp giãn mao mạch và giảm nhức mỏi.\n"
+                f"- Kê cao chân khi ngủ: Đặt gối dưới bắp chân giúp máu lưu thông về tim, hạn chế sưng phù.\n"
+                f"- Vận động tại chỗ: Tranh thủ các quãng nghỉ 5 phút xoay khớp cổ chân và nhón gót."
             )
 
         if any(w in clean_q for w in ["ngủ", "ca đêm", "mất ngủ", "đổi ca", "nhịp sinh học"]):
             return (
                 f"Chào {user_name}! Đổi ca làm việc từ ca ngày sang ca đêm dễ gây rối loạn nhịp sinh học.\n\n"
-                f"💡 **Bí quyết ngủ ngon sau ca đêm:**\n"
-                f"1. **Đeo kính râm khi tan ca về**: Hạn chế ánh sáng mặt trời làm ức chế hormone Melatonin tự nhiên.\n"
-                f"2. **Phòng ngủ tối & mát (22-24°C)**: Kéo rèm kín và dùng bịt mắt chống ồn.\n"
-                f"3. **Tránh caffeine trước khi hết ca 4 tiếng**: Không uống cà phê/bò húc sát giờ về phòng.\n"
-                f"4. **Tắt màn hình 30 phút trước khi ngủ**: Giúp não bộ thả lỏng và dễ đi vào giấc ngủ sâu."
+                f"Bí quyết ngủ ngon sau ca đêm:\n"
+                f"- Đeo kính râm khi tan ca về: Hạn chế ánh sáng mặt trời làm ức chế hormone Melatonin tự nhiên.\n"
+                f"- Phòng ngủ tối và mát (22-24°C): Kéo rèm kín và dùng bịt mắt chống ồn.\n"
+                f"- Tránh caffeine trước khi hết ca 4 tiếng: Không uống cà phê/bò húc sát giờ về phòng.\n"
+                f"- Tắt màn hình 30 phút trước khi ngủ: Giúp não bộ thả lỏng và dễ đi vào giấc ngủ sâu."
             )
 
         if any(w in clean_q for w in ["stress", "thở", "căng thẳng", "áp lực", "lo lắng"]):
             return (
                 f"Chào {user_name}! Cảm giác căng thẳng khi đứng chuyền hay làm quen việc mới là điều bình thường.\n\n"
-                f"🫁 **Thực hành Hít thở Box Breathing 4-4-4-4 (Hạ stress trong 3 phút):**\n"
-                f"- **Bước 1**: Hít vào chậm rãi qua mũi trong **4 giây**.\n"
-                f"- **Bước 2**: Giữ nín thở trong **4 giây**.\n"
-                f"- **Bước 3**: Thở ra từ từ qua miệng trong **4 giây**.\n"
-                f"- **Bước 4**: Nín thở nghỉ trong **4 giây** trước khi lặp lại chu kỳ tiếp theo."
+                f"Thực hành Hít thở Box Breathing 4-4-4-4 (Hạ stress trong 3 phút):\n"
+                f"- Bước 1: Hít vào chậm rãi qua mũi trong 4 giây.\n"
+                f"- Bước 2: Giữ nín thở trong 4 giây.\n"
+                f"- Bước 3: Thở ra từ từ qua miệng trong 4 giây.\n"
+                f"- Bước 4: Nín thở nghỉ trong 4 giây trước khi lặp lại chu kỳ tiếp theo."
             )
 
         # Nếu có nguồn cẩm nang được tìm thấy
@@ -878,12 +960,12 @@ Nhiệm vụ: Cảm ơn bạn {user_name}, chúc ca làm an toàn.
             top = rag_sources[0]
             return (
                 f"Chào {user_name}! Về thắc mắc của bạn, Cẩm nang thực tập [{top['title']}] có hướng dẫn liên quan.\n\n"
-                f"💡 Hãy áp dụng các quy chuẩn an toàn và trao đổi với Trưởng ca (Leader) nếu cần hướng dẫn trực tiếp.\n"
+                f"Hãy áp dụng các quy chuẩn an toàn và trao đổi với Trưởng ca (Leader) nếu cần hướng dẫn trực tiếp.\n"
                 f"Bạn có thể hỏi thêm Enigma về các bài tập thư giãn cơ hoặc chế độ sinh hoạt ca kíp nhé!"
             )
 
         return (
-            f"Chào {user_name}! Mình đã ghi nhận câu hỏi của bạn. Trong môi trường thực tập tại LG Display, "
+            f"Chào {user_name}! Mình đã ghi nhận câu hỏi của bạn. Trong môi trường {comp_str}, "
             f"hãy giữ tinh thần cởi mở và chủ động hỏi Anh/Chị Mentor hoặc Leader khi gặp trở ngại.\n\n"
-            f"Bạn có thể hỏi mình về: *'Kinh nghiệm mang giày ESD'*, *'Cách ngủ ngon ca đêm'*, *'Bài tập Box Breathing'* hoặc *'Quy tắc 5S'*."
+            f"Bạn có thể hỏi mình về: 'Kinh nghiệm mang giày ESD', 'Cách ngủ ngon ca đêm', 'Bài tập Box Breathing' hoặc 'Quy tắc 5S'."
         )

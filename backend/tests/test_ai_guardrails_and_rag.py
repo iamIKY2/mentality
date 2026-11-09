@@ -31,6 +31,7 @@ from app.services.ai_guardrails import (
     QUERY_TYPE_EMPATHIC,
     MISSING_TOPICS,
 )
+from app.core.config import settings
 from app.services.advanced_rag_service import AdvancedRAGService
 from app.services.vector_store_service import VectorStoreService
 
@@ -333,6 +334,149 @@ class TestRAGIntegrationOffline(unittest.IsolatedAsyncioTestCase):
         )
         self.assertEqual(res["intent"], "CRISIS")
         mock_record.assert_not_called()
+
+
+    # 17. Neutral query expansion
+    def test_query_expansion_neutral_no_lg_display(self):
+        expansions = AdvancedRAGService.expand_query("quy tắc 5s và an toàn")
+        self.assertIn("quy tắc 5S và an toàn lao động tại nhà máy", expansions)
+        for exp in expansions:
+            self.assertNotIn("LG Display", exp)
+
+    # 18. Dynamic fallback neutral wording & plain prose
+    def test_dynamic_fallback_neutral_and_plain_prose(self):
+        from app.services.ai_agent_service import RiskAssessmentResult
+        risk = RiskAssessmentResult(level="GREEN", reasons=[], trigger_emergency=False, recommended_actions=[])
+
+        # Greeting without company
+        fallback_greeting = AdvancedRAGService._generate_dynamic_fallback(
+            query="xin chào", intent="GREETING", rag_sources=[], user_name="Bình", risk_result=risk, company_name=None
+        )
+        self.assertNotIn("LG Display", fallback_greeting)
+        self.assertIn("Thực tập Doanh nghiệp", fallback_greeting)
+        self.assertNotIn("**", fallback_greeting)
+
+        # Foot pain without company - check bullets and plain prose
+        fallback_pain = AdvancedRAGService._generate_dynamic_fallback(
+            query="tôi bị đau chân quá", intent="DOMAIN", rag_sources=[], user_name="Bình", risk_result=risk, company_name=None
+        )
+        self.assertNotIn("**", fallback_pain)
+        self.assertNotIn("*", fallback_pain)
+        self.assertIn("- Miếng lót silicon y tế", fallback_pain)
+
+        # Injected company name
+        fallback_comp = AdvancedRAGService._generate_dynamic_fallback(
+            query="câu hỏi chung chung", intent="DOMAIN", rag_sources=[], user_name="Bình", risk_result=risk, company_name="VinFast"
+        )
+        self.assertIn("VinFast", fallback_comp)
+        self.assertNotIn("LG Display", fallback_comp)
+
+    # 19. Unit tests for stream path with company_name set and unset (mocking LLM)
+    @patch.object(settings, "GROQ_API_KEY", "mock_key")
+    @patch("app.services.advanced_rag_service.httpx.AsyncClient")
+    async def test_stream_path_with_company_name_set(self, mock_client_cls):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        async def fake_aiter_lines():
+            yield 'data: {"choices": [{"delta": {"content": "Chào bạn tại VinFast."}}]}'
+            yield "data: [DONE]"
+
+        mock_response.aiter_lines = fake_aiter_lines
+        mock_context = AsyncMock()
+        mock_context.__aenter__.return_value = mock_response
+        mock_instance = AsyncMock()
+        mock_instance.stream.return_value = mock_context
+        mock_client_cls.return_value.__aenter__.return_value = mock_instance
+
+        events = []
+        async for event in AdvancedRAGService.generate_advanced_rag_response_stream(
+            query="chào bạn",
+            user_name="Tuấn",
+            company_name="Công ty VinFast"
+        ):
+            events.append(event)
+
+        self.assertTrue(any(e["type"] == "metadata" for e in events))
+        self.assertTrue(any(e["type"] == "done" for e in events))
+        call_json = mock_instance.stream.call_args[1]["json"]
+        prompt = call_json["messages"][0]["content"]
+        self.assertIn("Doanh nghiệp của sinh viên: Công ty VinFast", prompt)
+
+    @patch.object(settings, "GROQ_API_KEY", "mock_key")
+    @patch("app.services.advanced_rag_service.httpx.AsyncClient")
+    async def test_stream_path_with_company_name_unset(self, mock_client_cls):
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+
+        async def fake_aiter_lines():
+            yield 'data: {"choices": [{"delta": {"content": "Chào bạn."}}]}'
+            yield "data: [DONE]"
+
+        mock_response.aiter_lines = fake_aiter_lines
+        mock_context = AsyncMock()
+        mock_context.__aenter__.return_value = mock_response
+        mock_instance = AsyncMock()
+        mock_instance.stream.return_value = mock_context
+        mock_client_cls.return_value.__aenter__.return_value = mock_instance
+
+        events = []
+        async for event in AdvancedRAGService.generate_advanced_rag_response_stream(
+            query="chào bạn",
+            user_name="Tuấn",
+            company_name=None
+        ):
+            events.append(event)
+
+        self.assertTrue(any(e["type"] == "metadata" for e in events))
+        self.assertTrue(any(e["type"] == "done" for e in events))
+        call_json = mock_instance.stream.call_args[1]["json"]
+        prompt = call_json["messages"][0]["content"]
+        self.assertIn("Doanh nghiệp của sinh viên: chưa rõ", prompt)
+
+    # 20. Excerpt titled "... LG Display" with company_name=None yields prompt with 'chưa rõ' wording
+    @patch.object(settings, "GROQ_API_KEY", "mock_key")
+    @patch("app.services.advanced_rag_service.httpx.AsyncClient")
+    @patch("app.services.advanced_rag_service.VectorStoreService.search_similar_chunks")
+    async def test_excerpt_named_lg_display_with_unknown_company_prompt_has_chua_ro(self, mock_search, mock_client_cls):
+        # Handbook excerpt titled "... LG Display"
+        mock_search.return_value = [{
+            "chunk": "Quy định làm việc và an toàn lao động tại xưởng sản xuất.",
+            "similarity": 0.88,
+            "metadata": {
+                "title": "Cẩm nang thực tập tại LG Display",
+                "category": "safety",
+                "article_id": "h_lgd_01"
+            }
+        }]
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.json.return_value = {
+            "choices": [{
+                "message": {"content": "Quy định tại LG Display chỉ mang tính tham khảo nếu bạn làm việc tại đơn vị khác."}
+            }]
+        }
+        mock_instance = AsyncMock()
+        mock_instance.post.return_value = mock_response
+        mock_client_cls.return_value.__aenter__.return_value = mock_instance
+
+        res = await AdvancedRAGService.generate_advanced_rag_response(
+            query="Quy tắc 5S ở xưởng ra sao?",
+            user_name="Hoàng",
+            company_name=None
+        )
+
+        call_json = mock_instance.post.call_args[1]["json"]
+        system_prompt = call_json["messages"][0]["content"]
+
+        # Prompt must contain the excerpt title containing LG Display
+        self.assertIn("Cẩm nang thực tập tại LG Display", system_prompt)
+        # Prompt must contain 'chưa rõ' wording for the student's company
+        self.assertIn("Doanh nghiệp của sinh viên: chưa rõ", system_prompt)
+        self.assertIn("chưa rõ", system_prompt)
+        # Prompt must contain citation rule about treating named companies as examples from another workplace
+        self.assertIn("ví dụ tham khảo từ một nơi làm việc khác", system_prompt)
 
 
 if __name__ == "__main__":

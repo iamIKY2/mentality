@@ -3,6 +3,7 @@ from typing import List, Dict, Any, Optional
 import google.generativeai as genai
 
 from app.core.config import settings
+from app.core.text_utils import strip_markdown
 from app.services.vector_store_service import VectorStoreService
 from app.services.ai_agent_service import AIAgentService, RiskAssessmentResult
 
@@ -20,7 +21,8 @@ class RAGService:
         stress_level: int = 2,
         sleep_hours: Optional[float] = None,
         recent_symptoms: Optional[List[str]] = None,
-        top_k: int = 3
+        top_k: int = 3,
+        company_name: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Full RAG Engine Pipeline:
@@ -62,17 +64,38 @@ class RAGService:
         context_str = "\n\n".join(context_texts) if context_texts else "Không tìm thấy nội dung cẩm nang khớp chính xác."
 
         # Step 3: Construct System Prompt
+        format_rule = (
+            "QUY TẮC ĐỊNH DẠNG BẮT BUỘC:\n"
+            "- Viết văn xuôi tự nhiên (plain prose), rõ ràng, mạch lạc, dễ đọc.\n"
+            "- TUYỆT ĐỐI KHÔNG dùng chữ in đậm (**text** hoặc __text__).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng chữ in nghiêng (*text* hoặc _text_).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng tiêu đề markdown (#, ##, ###).\n"
+            "- TUYỆT ĐỐI KHÔNG dùng bảng markdown (|...|).\n"
+            "- Nếu cần liệt kê các bước hoặc ý, CHỈ dùng dấu gạch ngang '- ' ở đầu dòng.\n"
+            "- Giữ nguyên các định danh mã/biến số (ví dụ shift_day, user_id) và phép tính số học (ví dụ 2*3)."
+        )
+
+        student_company_text = company_name if company_name else "chưa rõ"
+        citation_rule = (
+            f"QUY TẮC TRÍCH DẪN DOANH NGHIỆP:\n"
+            f"- Doanh nghiệp của sinh viên: {student_company_text}\n"
+            f"- Quy định hoặc nội quy đặc thù của một doanh nghiệp cụ thể CHỈ được phép trích dẫn và áp dụng nếu đoạn trích cẩm nang có nêu đích danh tên doanh nghiệp đó VÀ đó đúng là doanh nghiệp của sinh viên (doanh nghiệp đã xác định và trùng khớp).\n"
+            f"- Nếu doanh nghiệp của sinh viên là 'chưa rõ', hãy xem mọi tên doanh nghiệp xuất hiện trong đoạn trích cẩm nang chỉ là ví dụ tham khảo từ một nơi làm việc khác: phải nêu rõ quy định tại nơi làm việc thực tế của sinh viên có thể khác biệt và nhắc sinh viên chủ động hỏi Anh/Chị Mentor hoặc Quản lý ca (Leader).\n"
+            f"- Nếu đoạn trích cẩm nang không nêu đích danh doanh nghiệp nào, hãy đưa ra hướng dẫn quy chuẩn chung và nhắc sinh viên trao đổi với Mentor hoặc Quản lý ca (Leader)."
+        )
+
         sleep_info = f"{sleep_hours}h" if sleep_hours is not None else "Chưa có dữ liệu (chưa rõ)"
         if sleep_hours is None:
             sleep_rule = f"5. DỮ LIỆU GIẤC NGỦ: Hiện tại hệ thống CHƯA CÓ dữ liệu giấc ngủ ca gần nhất của bạn {user_name} (chưa rõ). Tuyệt đối KHÔNG tự giả định bạn ấy đã ngủ đủ 7 tiếng. Nếu sinh viên nhắc đến mệt mỏi, uể oải, ca kíp hoặc sức khỏe, hãy ân cần hỏi thăm bạn ấy ca vừa rồi ngủ được khoảng mấy tiếng."
         else:
             sleep_rule = f"5. DỮ LIỆU GIẤC NGỦ: Ca gần nhất bạn {user_name} ngủ khoảng {sleep_hours}h. Hãy cân nhắc thông tin này khi đưa ra lời khuyên phục hồi thể lực."
 
-        system_prompt = f"""Bạn là Enigma AI - Trợ lý Chăm sóc Tâm lý & Thích nghi Thực tập cho sinh viên tại LG Display.
+        system_prompt = f"""Bạn là Enigma AI - Trợ lý Chăm sóc Tâm lý & Thích nghi Thực tập Doanh nghiệp.
 Nhiệm vụ: Trả lời câu hỏi của sinh viên dựa trên thông tin Cẩm nang thực tập và tình trạng sức khỏe thực tế.
 
 ========= HỒ SƠ SINH VIÊN =========
 - Tên sinh viên: {user_name}
+- Doanh nghiệp của sinh viên: {student_company_text}
 - Giai đoạn thực tập: {intern_phase} (preparation: Chuẩn bị / adaptation: Thích nghi / sustain: Duy trì)
 - Mức độ stress hiện tại: {stress_level}/5
 - Số giờ ngủ ca gần nhất: {sleep_info}
@@ -88,6 +111,10 @@ Nhiệm vụ: Trả lời câu hỏi của sinh viên dựa trên thông tin C�
 3. Nếu sinh viên đang có stress cao hoặc thiếu ngủ, đưa ra 1-2 lời khuyên hành động ngay (như hít thở Box Breathing 4-4-4-4 hoặc ngâm chân nước ấm).
 4. Nếu rủi ro ở mức RED (Nguy cơ cao), đưa ra lời khuyên bình tĩnh và nhắc nhở sinh viên liên hệ ngay Hotline 111 hoặc Y tế trường.
 {sleep_rule}
+
+{citation_rule}
+
+{format_rule}
 """
 
         # Step 4: Call Gemini API or fallback
@@ -108,7 +135,7 @@ Nhiệm vụ: Trả lời câu hỏi của sinh viên dựa trên thông tin C�
             ai_reply = RAGService._fallback_response(query, relevant_chunks, risk_result, user_name)
 
         return {
-            "content": ai_reply,
+            "content": strip_markdown(ai_reply),
             "rag_sources": rag_sources,
             "risk_assessment": {
                 "level": risk_result.level,
@@ -121,7 +148,7 @@ Nhiệm vụ: Trả lời câu hỏi của sinh viên dựa trên thông tin C�
     @staticmethod
     def _fallback_response(query: str, relevant_chunks: List[Dict], risk_result: RiskAssessmentResult, user_name: str) -> str:
         """Intelligent Offline Fallback Generator when Gemini API key is missing or offline."""
-        lines = [f"Chào {user_name}! Enigma AI luôn đồng hành cùng bạn trong kỳ thực tập tại LG Display."]
+        lines = [f"Chào {user_name}! Enigma AI luôn đồng hành cùng bạn trong kỳ thực tập doanh nghiệp."]
 
         if relevant_chunks:
             top_meta = relevant_chunks[0].get("metadata", {})

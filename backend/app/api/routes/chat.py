@@ -156,8 +156,10 @@ async def stream_message(
 
     # 2. Lấy số giờ ngủ thực tế từ DB trong 36h gần nhất (bỏ qua payload.sleep_hours do client gửi)
     recent_sleep = await ChatService.get_recent_sleep_hours(db, user.id)
+    company_name = await ChatService.get_user_approved_company_name(db, user.id)
 
     async def event_generator():
+        from app.core.text_utils import strip_markdown
         collected_chunks = []
         rag_sources_cache = []
 
@@ -170,6 +172,7 @@ async def stream_message(
                 recent_symptoms=payload.recent_symptoms or [],
                 user_id=str(user.id),
                 db=db,
+                company_name=company_name,
             ):
                 if event["type"] == "metadata":
                     rag_sources_cache = event.get("rag_sources", [])
@@ -179,8 +182,8 @@ async def stream_message(
                 # Send SSE line
                 yield f"data: {json.dumps(event, ensure_ascii=False)}\n\n"
 
-            # Lưu tin nhắn AI hoàn chỉnh vào DB
-            final_content = "".join(collected_chunks).strip()
+            # Lưu tin nhắn AI hoàn chỉnh vào DB sau khi sanitize markdown
+            final_content = strip_markdown("".join(collected_chunks).strip())
             ai_msg = ChatMessage(
                 session_id=session_id,
                 is_user=False,

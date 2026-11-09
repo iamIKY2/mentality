@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/utils/text_sanitizer.dart';
 import '../../models/chat_message.dart';
 import '../../models/handbook_article.dart';
 import '../../theme/app_theme.dart';
@@ -96,7 +97,7 @@ class ChatBubble extends StatelessWidget {
                           ),
                         )
                       : Text(
-                          message.content,
+                          message.isUser ? message.content : stripMarkdown(message.content),
                           style: TextStyle(
                             color: message.isUser ? Colors.white : AppTheme.onSurface(context),
                             height: 1.45,
@@ -129,7 +130,7 @@ class ChatBubble extends StatelessWidget {
                       const Icon(Icons.auto_stories_rounded, size: 13, color: AppTheme.accentMint),
                       const SizedBox(width: 4),
                       Text(
-                        'Nguồn tham khảo từ Cẩm nang LG Display:',
+                        'Nguồn tham khảo từ Cẩm nang:',
                         style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: AppTheme.onSurfaceMuted(context)),
                       ),
                     ],

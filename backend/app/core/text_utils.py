@@ -62,3 +62,57 @@ def normalize_vietnamese_phone(phone: Optional[str]) -> Optional[str]:
         return "+" + cleaned
     raise ValueError("Số điện thoại không hợp lệ. Vui lòng nhập 10 chữ số (bắt đầu bằng 0 hoặc +84).")
 
+
+def strip_markdown(text: Optional[str]) -> str:
+    """
+    Sanitizes markdown text into plain prose for consistent UI display:
+    1. Converts leading '* ' and '• ' bullets to '- ' while preserving indentation.
+    2. Removes separator rows like |---|---| or |:---|---:|, and turns '| a | b |' into 'a - b'.
+    3. Drops headings (#, ##, etc. at start of line).
+    4. Turns [text](url) links into plain text.
+    5. Removes inline-code and block-code backticks (e.g. `code` -> code).
+    6. Removes bold (**text** and __text__).
+    7. Removes italics (*text* and _text_) without touching math (like 2*3) or
+       underscores inside words/identifiers/URLs (like shift_day, user_id).
+    8. Normalizes excessive consecutive newlines.
+    """
+    if not text:
+        return ""
+    
+    # 1. Convert leading '* ' and '• ' bullets to '- '
+    s = re.sub(r'(?m)^([ \t]*)[\*•][ \t]+', r'\1- ', text)
+
+    # 2. Remove table separator rows (e.g. |---|---| or |:---|---:|)
+    s = re.sub(r'(?m)^[ \t]*\|[\s:\-\|]+\|[ \t]*$\n?', '', s)
+
+    # 3. Convert table data rows '| a | b |' -> 'a - b'
+    def _convert_table_row(m: re.Match) -> str:
+        cells = [c.strip() for c in m.group(1).split('|') if c.strip()]
+        return " - ".join(cells)
+
+    s = re.sub(r'(?m)^[ \t]*\|(.*)\|[ \t]*$', _convert_table_row, s)
+
+    # 4. Drop headings (#, ##, etc. at start of line)
+    s = re.sub(r'(?m)^[ \t]*#{1,6}[ \t]*', '', s)
+
+    # 4. Turn [text](url) into text
+    s = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', s)
+
+    # 5. Remove code blocks and inline-code backticks
+    s = re.sub(r'```[a-zA-Z0-9]*\n?', '', s)
+    s = re.sub(r'`([^`\n]+)`', r'\1', s)
+    s = s.replace('`', '')
+
+    # 6. Remove bold **text** and __text__
+    s = re.sub(r'\*\*([^*\n]+?)\*\*', r'\1', s)
+    s = re.sub(r'(?<![a-zA-Z0-9_])__([^_\n\s](?:.*?[^_\n\s])?)__(?![a-zA-Z0-9_])', r'\1', s)
+
+    # 7. Remove italics *text* and _text_ without touching math or words with underscores
+    s = re.sub(r'(?<![a-zA-Z0-9])\*([^*\n\s](?:.*?[^*\n\s])?)\*(?![a-zA-Z0-9])', r'\1', s)
+    s = re.sub(r'(?<![a-zA-Z0-9_])_([^_\n\s](?:.*?[^_\n\s])?)_(?![a-zA-Z0-9_])', r'\1', s)
+
+    # 8. Clean up extra blank lines
+    s = re.sub(r'\n{3,}', '\n\n', s)
+    return s.strip('\r\n')
+
+

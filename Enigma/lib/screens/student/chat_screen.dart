@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import '../../core/utils/text_sanitizer.dart';
 import '../../models/chat_message.dart';
 import '../../widgets/chat_bubble.dart';
 import '../../theme/app_theme.dart';
@@ -126,7 +127,7 @@ class ChatScreenState extends State<ChatScreen> {
   ChatMessage _buildInitialMessage() {
     return ChatMessage(
       id: 'init_welcome',
-      content: 'Chào bạn! Mình là Enigma AI — Trợ lý Đồng hành Tâm lý & Thích nghi Thực tập tại LG Display. 💙\n\nBạn đang gặp khó khăn gì về nhịp ca kíp, sức khỏe đứng máy, quy trình làm việc hay cuộc sống ký túc xá không?',
+      content: 'Chào bạn! Mình là Enigma AI — Trợ lý Đồng hành Tâm lý & Thích nghi Thực tập Doanh nghiệp. 💙\n\nBạn đang gặp khó khăn gì về nhịp ca kíp, sức khỏe đứng máy, quy trình làm việc hay cuộc sống ký túc xá không?',
       isUser: false,
       timestamp: DateTime.now(),
       suggestedReplies: [
@@ -165,7 +166,13 @@ class ChatScreenState extends State<ChatScreen> {
     try {
       final res = await ApiClient.instance.get('/chat/sessions/${session.id}/messages');
       if (res.data is List) {
-        final loaded = (res.data as List).map((m) => ChatMessage.fromJson(m)).toList();
+        final loaded = (res.data as List).map((m) {
+          final msg = ChatMessage.fromJson(m);
+          if (!msg.isUser) {
+            msg.content = stripMarkdown(msg.content);
+          }
+          return msg;
+        }).toList();
         if (mounted) {
           setState(() {
             _messages.addAll(loaded.isNotEmpty ? loaded : [_buildInitialMessage()]);
@@ -611,7 +618,8 @@ class ChatScreenState extends State<ChatScreen> {
       }
 
       final aiData = res.data['ai_message'];
-      final fullContent = (aiData['content'] as String? ?? '').trim();
+      final rawContent = (aiData['content'] as String? ?? '').trim();
+      final fullContent = stripMarkdown(rawContent);
       final rawSources = res.data['rag_sources'] as List?;
       final riskAssessment = res.data['risk_assessment'] as Map<String, dynamic>?;
 
@@ -650,6 +658,11 @@ class ChatScreenState extends State<ChatScreen> {
         });
         _scrollToBottom();
         await Future.delayed(const Duration(milliseconds: 18));
+      }
+      if (mounted) {
+        setState(() {
+          aiMsg.content = stripMarkdown(aiMsg.content);
+        });
       }
     } on DioException catch (e) {
       if (!mounted) return;
