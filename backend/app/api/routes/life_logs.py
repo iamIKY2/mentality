@@ -15,7 +15,7 @@ from typing import Optional, List
 
 from app.db.database import get_db
 from app.services.user_service import get_current_user
-from app.services.life_log_service import LifeLogService
+from app.services.life_log_service import LifeLogService, get_vn_today
 
 router = APIRouter()
 
@@ -113,10 +113,12 @@ async def get_today_life_log(
     db: AsyncSession = Depends(get_db)
 ):
     """Trả về nhật ký sinh hoạt của ngày hôm nay nếu đã có."""
-    history = await LifeLogService.get_life_log_history(db, user.id, days=1)
-    if not history:
+    today_str = str(get_vn_today())
+    history = await LifeLogService.get_life_log_history(db, user.id, days=0)
+    today_entries = [h for h in history if h.get("date") == today_str]
+    if not today_entries:
         return {"has_log_today": False, "data": None}
-    return {"has_log_today": True, "data": history[0]}
+    return {"has_log_today": True, "data": today_entries[0]}
 
 
 @router.get("/history", summary="Lịch sử nhật ký sinh hoạt")

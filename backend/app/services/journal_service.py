@@ -1,10 +1,10 @@
-from datetime import date
 from typing import Optional, List, Dict, Any
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.models.journal import Journal
 from app.services.ai_agent_service import AIAgentService, RiskAssessmentResult
+from app.services.life_log_service import get_vn_today
 
 
 class JournalService:
@@ -17,7 +17,7 @@ class JournalService:
         physical_symptoms: Optional[List[str]] = None,
         note: Optional[str] = None
     ) -> Dict[str, Any]:
-        today = date.today()
+        today = get_vn_today()
         symptoms = physical_symptoms or []
 
         # Simple AI Sentiment analysis & Keyword extraction
@@ -33,17 +33,33 @@ class JournalService:
 
         keywords = symptoms + [w for w in ["ca_dem", "dung_may", "5s", "ngu_it"] if w in note_lower]
 
-        journal = Journal(
-            user_id=user_id,
-            journal_date=today,
-            stress_level=stress_level,
-            sleep_hours=sleep_hours,
-            physical_symptoms=symptoms,
-            note=note,
-            ai_sentiment=sentiment,
-            ai_keywords=keywords
+        existing_res = await db.execute(
+            select(Journal).where(
+                Journal.user_id == user_id,
+                Journal.journal_date == today
+            )
         )
-        db.add(journal)
+        journal = existing_res.scalar_one_or_none()
+
+        if journal:
+            journal.stress_level = stress_level
+            journal.sleep_hours = sleep_hours
+            journal.physical_symptoms = symptoms
+            journal.note = note
+            journal.ai_sentiment = sentiment
+            journal.ai_keywords = keywords
+        else:
+            journal = Journal(
+                user_id=user_id,
+                journal_date=today,
+                stress_level=stress_level,
+                sleep_hours=sleep_hours,
+                physical_symptoms=symptoms,
+                note=note,
+                ai_sentiment=sentiment,
+                ai_keywords=keywords
+            )
+            db.add(journal)
 
         # Trigger AI Agent Risk Screening
         risk_res: RiskAssessmentResult = AIAgentService.evaluate_psychological_risk(

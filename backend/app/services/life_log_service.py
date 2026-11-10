@@ -7,7 +7,7 @@ Cung cấp các API để:
   - Dashboard tóm tắt sức khỏe tổng quan
   - AI Agent Risk Screening tích hợp Function Calling
 """
-from datetime import date, timedelta
+from datetime import date, datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, desc
@@ -15,6 +15,13 @@ from sqlalchemy import select, func, desc
 from app.db.models.journal import Journal
 from app.db.models.checkin import DailyCheckin, UserStreak
 from app.services.ai_agent_service import AIAgentService, RiskAssessmentResult
+
+VN_TZ = timezone(timedelta(hours=7))
+
+
+def get_vn_today() -> date:
+    """Trả về ngày hiện tại theo múi giờ Việt Nam (UTC+7)."""
+    return datetime.now(VN_TZ).date()
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -102,7 +109,7 @@ class LifeLogService:
         Ghi nhận nhật ký sinh hoạt tích hợp với bảng Journal.
         Thực hiện AI Agent Risk Screening sau khi lưu.
         """
-        today = date.today()
+        today = get_vn_today()
         symptoms = physical_symptoms or []
         activities = activities_done or []
 
@@ -133,19 +140,36 @@ class LifeLogService:
         if shift_type:
             extracted_keywords.append(f"shift_{shift_type}")
 
-        # Create Journal entry (reuse existing Journal model)
-        journal = Journal(
-            user_id=user_id,
-            journal_date=today,
-            stress_level=stress_level,
-            sleep_hours=sleep_hours,
-            shift_type=shift_type,
-            physical_symptoms=symptoms,
-            note=mood_note,
-            ai_sentiment=sentiment,
-            ai_keywords=extracted_keywords
+        # Upsert Journal entry (Update if already exists for today, otherwise Insert)
+        existing_res = await db.execute(
+            select(Journal).where(
+                Journal.user_id == user_id,
+                Journal.journal_date == today
+            )
         )
-        db.add(journal)
+        journal = existing_res.scalar_one_or_none()
+
+        if journal:
+            journal.stress_level = stress_level
+            journal.sleep_hours = sleep_hours
+            journal.shift_type = shift_type
+            journal.physical_symptoms = symptoms
+            journal.note = mood_note
+            journal.ai_sentiment = sentiment
+            journal.ai_keywords = extracted_keywords
+        else:
+            journal = Journal(
+                user_id=user_id,
+                journal_date=today,
+                stress_level=stress_level,
+                sleep_hours=sleep_hours,
+                shift_type=shift_type,
+                physical_symptoms=symptoms,
+                note=mood_note,
+                ai_sentiment=sentiment,
+                ai_keywords=extracted_keywords
+            )
+            db.add(journal)
 
         # AI Agent Risk Screening
         risk_res: RiskAssessmentResult = AIAgentService.evaluate_psychological_risk(
@@ -210,7 +234,7 @@ class LifeLogService:
         days: int = 14
     ) -> List[Dict[str, Any]]:
         """Lấy lịch sử nhật ký sinh hoạt với metadata phân tích."""
-        since_date = date.today() - timedelta(days=days)
+        since_date = get_vn_today() - timedelta(days=days)
 
         result = await db.execute(
             select(Journal)
@@ -254,7 +278,7 @@ class LifeLogService:
         Analytics tổng hợp xu hướng sinh hoạt.
         Trả về: avg_stress, avg_sleep, trend, phân bố cảm xúc, etc.
         """
-        since_date = date.today() - timedelta(days=days)
+        since_date = get_vn_today() - timedelta(days=days)
 
         result = await db.execute(
             select(Journal)
@@ -368,7 +392,7 @@ class LifeLogService:
         Dashboard summary: checkin streak + today's life log + 7-day analytics.
         Endpoint chính cho màn hình Dashboard Flutter.
         """
-        today = date.today()
+        today = get_vn_today()
 
         # Today's checkin
         checkin_res = await db.execute(

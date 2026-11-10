@@ -5,6 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from app.db.models.checkin import DailyCheckin, UserStreak
+from app.services.life_log_service import get_vn_today
 
 
 GACHA_MESSAGES = [
@@ -34,7 +35,7 @@ GACHA_MESSAGES = [
 class CheckinService:
     @staticmethod
     async def get_today_checkin(db: AsyncSession, user_id) -> Optional[DailyCheckin]:
-        today = date.today()
+        today = get_vn_today()
         result = await db.execute(
             select(DailyCheckin).where(
                 DailyCheckin.user_id == user_id,
@@ -51,7 +52,7 @@ class CheckinService:
         stress_factors: Optional[list] = None,
         note: Optional[str] = None
     ) -> Dict[str, Any]:
-        today = date.today()
+        today = get_vn_today()
 
         # Check if already checked in today
         existing = await CheckinService.get_today_checkin(db, user_id)
